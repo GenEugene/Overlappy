@@ -1,0 +1,335 @@
+####################################################################################################################
+import maya.cmds as cmds
+####################################################################################################################
+
+def resetValues():
+	
+	global goalSmooth; goalSmooth = 1.5 # Сглаживание позиции
+	global timeScale; timeScale = 0.3 # Скейл времени
+	global goalW; goalW = 0.5 # Влияние физики
+	global cycle; cycle = False # Проверка цикла
+
+	global slWidth; slWidth = 421 # Ширина ползунков
+	global slHeight; slHeight = 25 # Высота зоны надписей
+	global buttonHeight; buttonHeight = 50 # Высота кнопок
+	
+	global pRad; pRad = 0.253 # Размер меша частицы
+	global pShape; pShape = 4 # Тип отображения частицы
+	
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+	mainScriptName = "Overlapper "
+	mainScriptVersion = "v0.01 |--STABLE--|"
+	
+	posScriptLabelTAB = "     ----------------------     "
+	posScriptName = "Translation Overlapper   "
+	posScriptVersion = "v0.09   <<<   Stable"
+	global posScriptAnnotation; posScriptAnnotation = " Примеры использования:\n\n желе\n живот\n грудь\n щёки\n пышные волосы\n вязкая жидкость"
+	
+	rotScriptLabelTAB = "     ------------------------     "
+	rotScriptName = "Rotation Overlapper   "
+	rotScriptVersion = "v0.00   >>>   Unstable"
+	global rotScriptAnnotation; rotScriptAnnotation = " Примеры использования:\n\n хвосты \n конечности\n спина\n висячие верёвки\n упругие антенны"
+
+	global windowName; windowName = mainScriptName + mainScriptVersion
+	global posScriptLabel; posScriptLabel = posScriptLabelTAB + posScriptName + posScriptVersion
+	global rotScriptLabel; rotScriptLabel = rotScriptLabelTAB + rotScriptName + rotScriptVersion
+	
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+def resetSliders():
+	cmds.checkBox( "checkCycle", e=True, v=cycle )
+	cmds.floatSliderGrp( "s1", e=True, f=True, min=0.0, max=6.0, fmx=10, v=goalSmooth )
+	cmds.floatSliderGrp( "s2", e=True, f=True, min=0.0, max=2.0, fmx=10, v=timeScale )
+	cmds.floatSliderGrp( "s3", e=True, f=True, min=0.0, max=1.0, v=goalW )
+	
+	cmds.floatSliderGrp( "s4", e=True, f=True, min=0.0, max=6.0, fmx=10, v=goalSmooth )
+	cmds.floatSliderGrp( "s5", e=True, f=True, min=0.0, max=2.0, fmx=10, v=timeScale )
+	cmds.floatSliderGrp( "s6", e=True, f=True, min=0.0, max=1.0, v=goalW )
+	
+	print "\n||| OVERLAPPER RESET |||\n"
+
+####################################################################################################################
+
+def uiCreation():
+	
+	if cmds.window( "main", exists = True ):
+		cmds.deleteUI( "main" )
+
+	overUI = cmds.window( "main", title=windowName, mxb=False, s=False )
+	cmds.window( "main", e=True, wh=( 10, 10 ) , rtf=True )
+	
+	cmds.columnLayout( 'layout1', rs=4 )
+	
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+	cmds.frameLayout( 'transLayout', l=posScriptLabel )
+	
+	cmds.floatSliderGrp( "s1", l='Smooth', f=True, min=0.0, max=6.0, fmx=10, 
+	v=goalSmooth, cc=('goalSmooth=printSmoothV()'), pre=1, cal=( 1, "left" ), w=slWidth, ann=" Сглаживание позиции 2 до 5 ", el="~1.5" )
+	
+	cmds.floatSliderGrp( "s2", l='Scale', f=True, min=0.0, max=2.0, fmx=10, 
+	v=timeScale, cc=('timeScale=printScaleV()'), pre=1, cal=( 1, "left" ), w=slWidth, ann=" Скейл скорости симуляции 0.5 до 1 ", el="~0.3" )
+	
+	cmds.floatSliderGrp( "s3", l='Weight', f=True, min=0.0, max=1.0, 
+	v=goalW, cc=('goalW=printWeightV()'), pre=1, cal=(1, "left"), w=slWidth, ann=" Сила притяжения частицы 0.5 ", el="~0.5" )
+	
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+	cmds.frameLayout( "rotLayout", l=rotScriptLabel )
+	
+	cmds.floatSliderGrp( "s4", l='Smooth', f=True, min=0.0, max=6.0, fmx=10, 
+	v=goalSmooth, cc=('goalSmooth=printRotSmoothV()'), pre=1, cal=( 1, "left" ), w=slWidth, ann=" Сглаживание позиции 2 до 5 ", el="~0.0", en=False )
+	
+	cmds.floatSliderGrp( "s5", l='Scale', f=True, min=0.0, max=2.0, fmx=10, 
+	v=timeScale, cc=( 'timeScale=printRotScaleV()'), pre=1, cal=( 1, "left" ), w=slWidth, ann=" Скейл скорости симуляции 0.5 до 1 ", el="~0.0", en=False )
+	
+	cmds.floatSliderGrp( "s6", l='Weight', f=True, min=0.0, max=1.0, 
+	v=goalW, cc=( 'goalW=printRotWeightV()' ), pre=1, cal=( 1, "left" ), w=slWidth, ann=" Сила притяжения частицы 0.5 ", el="~0.0", en=False )
+	
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+	cmds.frameLayout( "buttonLayout", l='BUTTONS' )           ##############################################   <<<<<<<<<<<<<<<<<<<<<<<<<<
+	cmds.rowColumnLayout( numberOfColumns=3, columnWidth=[ (1, 200), (2, 100), (3, 200) ] )
+	
+	
+	cmds.checkBox( "checkCycle", label="Translation loop", v=cycle, cc=( 'cycle=checkCycle()' ) )
+	cmds.separator( h=buttonHeight/2 , style='none' )
+	cmds.checkBox( "checkRotationCycle", label="Rotation loop", v=False )
+	
+	
+	cmds.button( label="RUN translation sim", command=( 'positionStart()' ), bgc=( 0.3,0.85,1 ) , h=buttonHeight )
+	cmds.separator( h=buttonHeight/2 , style='none' )
+	cmds.button( label="RUN rotation sim", command=( 'print "RUN rotation sim"' ), bgc=( 0.3,0.85,1 ) , h=buttonHeight )
+	
+	#cmds.rowColumnLayout( numberOfColumns=5, columnWidth=[ (1, 100), (2, 100), (3, 100), (4, 100), (5, 100) ] )
+	
+	cmds.button( label="^^^ RESET translation ^^^", command=( 'print "RESET translation"' ), bgc=( 0.2, 0.6, 0.2 ) , h=buttonHeight )
+	cmds.button( label="RESET ALL", command=( 'resetValues(); resetSliders()' ), bgc=( 0.6, 1, 0.45 ) , h=buttonHeight )
+	cmds.button( label="^^^ RESET rotation ^^^", command=( 'print "RESET rotation"' ), bgc=( 0.2, 0.6, 0.2 ) , h=buttonHeight )
+	
+	#cmds.rowColumnLayout( numberOfColumns=1, columnWidth=[ (1, 200) ] )
+	#cmds.frameLayout( "rotLayout", p='World' )
+	
+	cmds.button( label="DELETE OVERLAPPER", command=( 'deleteMainLayer()' ), bgc=( 0.9, 0.5, 0.3 ) , h=buttonHeight )
+
+	#cmds.separator( h=buttonHeight/2 )
+	
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+	cmds.showWindow( overUI )
+
+####################################################################################################################
+
+def checkCycle():
+	cycle = cmds.checkBox( "checkCycle", q=True, v=True )
+	print "Loop =", cycle
+	return cycle
+
+def printSmoothV():
+	goalSmooth = cmds.floatSliderGrp( "s1", q=True, v=True )
+	print "Position smooth =", goalSmooth
+	return goalSmooth
+	
+def printScaleV():
+	timeScale = cmds.floatSliderGrp( "s2", q=True, v=True )
+	print "Position scale =", timeScale
+	return timeScale
+	
+def printWeightV():
+	goalW = cmds.floatSliderGrp( "s3", q=True, v=True )
+	print "Position weight =", goalW
+	return goalW
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+def printRotSmoothV():
+	goalSmooth = cmds.floatSliderGrp ("s4", q=True, v=True)
+	print "Rotation smooth =", goalSmooth
+	return goalSmooth
+	
+def printRotScaleV():
+	timeScale = cmds.floatSliderGrp ("s5", q=True, v=True)
+	print "Rotation scale =", timeScale
+	return timeScale
+	
+def printRotWeightV():
+	goalW = cmds.floatSliderGrp ("s6", q=True, v=True)
+	print "Rotation weight =", goalW
+	return goalW
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+def deleteMainLayer():
+	cmds.delete (mainLayerName)
+
+def resetLoopTime():
+	cmds.playbackOptions (e=True, min=asT, max=aeT)
+	cmds.currentTime (asT) # Установка времени в начало анимации
+
+def setTimeToMin():
+	cmds.currentTime (minLoopTime) # Установка времени в начало анимации
+
+####################################################################################################################
+### Main (need to rebuld code)
+
+def positionStart():
+	
+	global asT; asT = cmds.playbackOptions (query=True, min=True) # Левая граница анимации
+	global aeT; aeT = cmds.playbackOptions (query=True, max=True) # Правая граница анимации
+	resetLoopTime()
+	
+	global listObjects; listObjects = cmds.ls (sl=True) # Список трансформов
+	
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+
+	global listFixed; listFixed = listObjects [:]
+
+	for i in range (len(listFixed)):
+		listFixed[i] = listFixed[i].replace("|", "_")
+
+
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+	
+	global mainLayerName; mainLayerName = "OVERLAPPER" # Имя главного слоя
+
+	if (cmds.objExists(mainLayerName)):
+		print "\n||| OVERLAPPER start |||\n"
+	else:
+		cmds.animLayer (mainLayerName)
+		print "\n||| OVERLAPPER start ||| Layer created |||\n"
+
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+	for i in range(len(listFixed)): # Основной цикл
+		
+		global aimLoc; aimLoc = listFixed[i] + "_aim_loc" # Имя аим локатора
+		global tempLoc; tempLoc = listFixed[i] + "_temp_loc" # Имя физ локатора
+		global tempPart; tempPart = listFixed[i] + "_temp_part" # Имя физ частицы
+		global tempNucl; tempNucl = "nucleus1" # Имя физ ноды
+	
+		global partAimLoc; partAimLoc = aimLoc + ".translate" # Обращение к позиции аим локатора
+		global partRtype; partRtype = tempPart + "Shape.particleRenderType" # Обращение к типу отображения частицы
+		global partRrad; partRrad = tempPart + "Shape.radius" # Обращение к размеру частицы
+		global partRsm; partRsm = tempPart + "Shape.goalSmoothness" # Обращение к мягкости физики
+		global partRwe; partRwe = tempPart + "Shape.goalWeight[0]" # Обращение к весу ноды
+		global partPos; partPos = tempPart + ".center" # Обращение к центру частицы
+		global partNucl; partNucl = tempNucl + ".timeScale" # Обращение к скейлу времени физ ноды
+		global nuclStart; nuclStart = tempNucl + ".startFrame" # Обращение к старту симуляции физ ноды
+		
+		cmds.spaceLocator (n = tempLoc) # Создаём физ локатор
+		cmds.matchTransform (tempLoc, listObjects[i], pos=True) # Перемещаем локатор в пивот объекта
+		
+		objCenter = tempLoc + ".translate" # Обращение к центру объекта
+		objC = cmds.getAttr (objCenter) # Записываем центр объекта
+		
+		locCenter = tempLoc + ".center" # Обращение к центру физ локатора
+		locTr = tempLoc + ".translate" # Обращение к позиции физ локатора
+		
+		cmds.nParticle (p = objC, n = tempPart , c = 1) # Создаём частицу в целевой позиции
+		cmds.goal (tempPart, w=goalW, utr=1, g = tempLoc)# Создаём физическую связь
+		
+		cmds.select (tempLoc, r=True) # Выделяем физ локатор
+		cmds.select (listObjects[i], add=True) # Выделяем целевого родителя
+		cmds.parent (r=True) # Создаём иерархию
+		
+		cmds.matchTransform (tempLoc, listObjects[i], pos=True) # Перемещаем локатор в пивот объекта
+
+
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+		cmds.setAttr (partRtype, pShape)
+		cmds.setAttr (partRrad, pRad)
+		cmds.setAttr (partRsm, goalSmooth)
+		cmds.setAttr (partRwe, goalW)
+		cmds.setAttr (partNucl, timeScale)
+		cmds.setAttr (nuclStart, asT)
+		
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+		cmds.duplicate (tempLoc, rr=True, n = aimLoc) # Дублируем локатор
+		cmds.select (aimLoc, r=True) # Выделяем аим локатор
+		cmds.parent (w=True) # Разбираем иерархию
+		cmds.connectAttr (partPos, partAimLoc, f=True) # Привязываем аим локатор к частице
+		
+		global minLoopTime; minLoopTime = aeT * -2
+		global maxLoopTime; maxLoopTime = aeT * 2
+		
+		if (cycle):
+			
+			#cmds.playbackOptions (e=True, min=minLoopTime, max=maxLoopTime)
+			cmds.setAttr (nuclStart, minLoopTime)
+			#setTimeToMin()
+				
+			cmds.bakeResults (aimLoc, t = (minLoopTime, maxLoopTime), sm=True, at = "translate") # Запекание аим локатора для цикла
+			cmds.delete (tempLoc, tempPart, tempNucl) # Удаляем объекты физики
+			#cmds.select (aimLoc, r=True) # Выделяем аим локатор
+			#cmds.keyframe (tc = (aeT*-2), r=True) # Сдвигаем тройной цикл на один проход влево
+			#cmds.setInfinity (pri="cycle", poi="cycle")
+			
+			setTimeToMin()
+			
+			cmds.select (aimLoc, r=True) # Выделяем аим локатор как родителя
+			cmds.select (listObjects[i], add=True) # Выделяем объект как подчиненного
+			cmds.parentConstraint (mo=True, sr=["x", "y", "z"], w = 1) # Создаём позиционный констрейн
+			
+			resetLoopTime()
+
+		else:
+			
+			cmds.bakeResults (aimLoc,t = (asT, aeT), sm=True, at = "translate") # Запекание аим локатора для линейной анимации
+			cmds.delete (tempLoc, tempPart, tempNucl) # Удаляем объекты физики
+			
+			resetLoopTime()
+			
+			cmds.select (aimLoc, r=True) # Выделяем аим локатор как родителя
+			cmds.select (listObjects[i], add=True) # Выделяем объект как подчиненного
+			cmds.parentConstraint (mo=True, sr=["x", "y", "z"], w = 1) # Создаём позиционный констрейн
+
+	#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+		layerBase = "overlap_" # Имя базы слоя
+		layerName = layerBase + listFixed[i] # Имя слоя	
+		layerComp = listFixed[i] + '_layer_{0}'.format("0") # Имя компонента слоя
+
+		if (cmds.objExists(layerName)):
+			
+			cmds.bakeResults (listObjects[i], t = (asT, aeT), sm=True, bol=True, at = "translate") # Запекаем объект в слой
+			cmds.select (listObjects[i], r=True)
+			cmds.setInfinity (pri="cycle", poi="cycle")
+			cmds.delete (aimLoc) # Удаляем объекты скрипта
+			cmds.container("BakeResultsContainer", e=True, rc=True) # Удаляем контейнер
+			cmds.animLayer ("BakeResults", e=True, p = layerName) # Переносим слой с анимацией в основной слой объекта
+			cmds.rename ("BakeResults", layerComp) # Переименовываем слой
+			
+			resetLoopTime()
+		else:
+			cmds.animLayer (layerName) # Создаём пустой слой для всех оверлапов объекта
+			cmds.animLayer (layerName, e=True, p = mainLayerName) # Переносим базу слоя в главный слой
+			cmds.bakeResults (listObjects[i], t = (asT, aeT), sm=True, bol=True, at = "translate") # Запекаем объект в слой
+			cmds.select (listObjects[i], r=True)
+			cmds.setInfinity (pri="cycle", poi="cycle")
+			cmds.delete (aimLoc) # Удаляем объекты скрипта
+			cmds.container("BakeResultsContainer", e=True, rc=True) # Удаляем контейнер
+			cmds.animLayer ("BakeResults", e=True, p = layerName) # Переносим слой с анимацией в основной слой объекта
+			cmds.rename ("BakeResults", layerComp) # Переименовываем слой
+			
+			resetLoopTime()
+
+		
+		cmds.select (d=True) # Деселект
+		
+	for l in listObjects:
+		cmds.select (l, add=True)
+		
+	print "\n||| OVERLAPPER end |||\n"
+
+####################################################################################################################
+### Run code
+
+resetValues()
+uiCreation()
+
+####################################################################################################################
+### End
