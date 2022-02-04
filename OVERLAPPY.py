@@ -1,31 +1,22 @@
-################################################################################
-###### OVERLAPPY v0.1.1
-################################################################################
-### https://www.highend3d.com/maya/script/overlappy-for-maya-105076 - Overlappy page. Check updates and report bugs
-################################################################################
-""" TO DO    ||| FOR DEBUG ||| sys.exit() |||
-	- Gravity options
-	- Aim position offset
-	- Deselect shapes from list
-	- Installation
-	- Twist mode
-	- Loop mode upgrade
-	- Stop "ESC"
-	- Save prefs to file
-"""
-################################################################################
-### Import ###
-import maya.cmds as cmds
-import sys
+# OVERLAPPY v0.1.2
+# Author Evgeny Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
+# Maya 2017-2022
+# https://github.com/GenEugene/Overlappy
+
+import maya.cmds as cmds, sys, os
+import maya.mel as mel
 from datetime import datetime
 from inspect import currentframe, getframeinfo
 
-### Class ###
+# sys.exit()
+
 class TheOverlappy:
-	""""TheOverlappy" class is cool"""
 	class OverlappyObject:
-		""""OverlappyObject" class is amazing"""
-		
+		### TEMP values
+		script_label = "OVERLAPPY"
+		script_version = "v0.1.2*"
+		main_window_label = "{0} {1}".format(script_label, script_version)
+
 		### Slider values ###
 		T_goal_smooth, T_time_scale, T_goal_weight = 1.5, 0.3, 0.5
 		R_goal_smooth, R_time_scale, R_goal_weight = 1.5, 0.3, 0.5
@@ -148,9 +139,6 @@ class TheOverlappy:
 		splitChain_text_name = 'splitChain_text'
 		
 		## Labels
-		script_label = "Overlappy"
-		script_version = "v0.1.1"
-		main_window_label = "{0} {1}".format(script_label, script_version)
 		
 		TL_label = "TRANSLATION VALUES"
 		RL_label = "ROTATION VALUES"
@@ -1323,6 +1311,3 @@ class TheOverlappy:
 ### Create instance ###
 obj = TheOverlappy.OverlappyObject()
 obj.RunOverlappy()
-
-################################################################################
-###### End code ######

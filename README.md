@@ -26,7 +26,7 @@ https://www.artstation.com/geneugene
 ---
 # Version history
 ### v0.1.2*
-    -
+    - [OTHER] refactoring in progress
 
 ### v0.1.1
     - [FIX] updated for Maya 2020-2022
