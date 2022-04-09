@@ -1,4 +1,4 @@
-# GETools v0.1.2 (GenEugene Tools)
+# GETools v0.2.0 (GenEugene Tools)
 # Author Evgeny (GenEugene) Gataulin tek94@mail.ru tek942@gmail.com
 # Maya 2017-2022
 # https://github.com/GenEugene/Overlappy
@@ -14,32 +14,51 @@ import maya.cmds as c
 
 class GETOOLS_class:
 	def __init__(self):
+		### COLORS
+		self.cRed = [1, .5, .5]
+		self.cOrange = [1, .6, .3]
+		self.cYellow = [1, 1, .5]
+		self.cGreen = [.6, 1, .6]
+		self.cLBlue = [.4, .8, 1]
+		self.cBlue = [.3, .7, 1]
+		self.cPurple = [.81, .4, 1]
+		self.cWhite = [1, 1, 1]
+		self.cGray = [.5, .5, .5]
+
 		### WINDOW
-		self.titleText = "OVERLAPPY in progress..."
+		self.titleText = "OVERLAPPY v0.2.0"
 		self.windowWidth = 300
-		self.lineHeight = 26
 		self.window_name = "GEToolsWindow"
-		self.windowHeight = 20
-		self.defaultTab = 2
-		self.tabs = None
+		self.windowHeight = 24
+
+		### SLIDERS
+		self.sliderWidth1 = 60
+		self.sliderWidth2 = 60
+		self.sliderWidth3 = 10
 
 		### SETTINGS
-		self.nameMainGroup = "OverlappyMainGroup"
-		self.nameGrpRef = "grpRef"
-		self.nameGrpOffset = "grpOffset"
-		self.nameLocGoal = "locGoal"
-		self.nameLocParticle = "locParticle"
-		self.nameParticle = "particle"
+		self.particleSize = 20
+		self.particleConserve = 1
+		self.particleDrag = 0.010
+		self.particleDamp = 0
+		self.goalSmooth = 3
+		self.goalWeight = 0.5
+		self.nucleusTimeScale = 1
+		self.nucleusGravity = 9.800
 
-		self.weight = 0.5
+		### NAMES
+		self.nameMainGroup = "_OverlappyMainGroup_"
+		self.nameLocGoal = "_locGoal_"
+		self.nameLocParticle = "_locParticle_"
+		self.nameParticle = "_particle_"
+		self.nameNucleus = "nucleus1" # TODO: get nucleus node from scene
 
-		self.simulated = False
+		### READONLY
 		self.selected = None
-
-		### TIME
 		self.timeCurrent = None
 		self.timeStart = None
 		self.timeEnd = None
+		self.simulated = False
 
 	def CreateUI(self):
 		# WINDOW
@@ -47,8 +66,7 @@ class GETOOLS_class:
 			c.deleteUI(self.window_name)
 		c.window(self.window_name, title = self.titleText, mxb = 0, s = 0)
 		c.window(self.window_name, e = True, rtf = True, wh = (self.windowWidth, self.windowHeight))
-		c.columnLayout(adj = True, h = self.windowHeight)
-
+		layout = c.columnLayout(adj = True, h = self.windowHeight)
 
 		# HEAD MENU
 		c.menuBarLayout()
@@ -58,22 +76,47 @@ class GETOOLS_class:
 		c.menuItem(label = 'Reload', c = "GETOOLS.Restart()")
 
 		# BUTTONS
-		c.frameLayout(l = "TEST BUTTONS", collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (self.windowWidth / 2, self.windowHeight))
-
+		c.frameLayout(l = "BUTTONS", p = layout, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
+		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (self.windowWidth / 3, self.windowHeight))
+		ccSelectObjects = self._SelectObjects
+		ccSelectParticle = self._SelectParticle
+		ccSelectNucleus = self._SelectNucleus
 		ccRunLogic = self._RunMainLogic
 		ccCleanup = self._Cleanup
-		ccDeleteNucleus = self._DeleteNucleus
+		c.button(l = "SELECT OBJECTS", c = ccSelectObjects, bgc = self.cLBlue)
+		c.button(l = "SELECT PARTICLE", c = ccSelectParticle, bgc = self.cLBlue)
+		c.button(l = "SELECT NUCLEUS", c = ccSelectNucleus, bgc = self.cLBlue)
+		c.button(l = "RUN", c = ccRunLogic, bgc = self.cGreen)
+		c.button(l = "none", enable=0)
+		c.button(l = "none", enable=0)
+		c.button(l = "BAKE TO OBJECT", enable=0)
+		c.button(l = "BAKE TO LAYER", enable=0)
+		c.button(l = "none", enable=0)
+		c.button(l = "CLEANUP", c = ccCleanup, bgc = self.cYellow)
+		c.button(l = "RESET PARTICLE", enable=0)
+		c.button(l = "RESET NUCLEUS", enable=0)
 
-		c.button(l = "RUN", c = ccRunLogic)
-		c.button(l = "UPDATE")
+		# SETTINGS
+		c.frameLayout(l = "PARTICLE", p = layout, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
+		c.floatSliderGrp(l = " Size", v = self.particleSize, fmn = 0, fmx = 1000, min = 0, max = 20, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		c.floatSliderGrp(l = " Conserve", v = self.particleConserve, fmn = 0, fmx = 1, min = 0, max = 1, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		c.floatSliderGrp(l = " Drag", v = self.particleDrag, fmn = 0, fmx = 10, min = 0, max = 2, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		c.floatSliderGrp(l = " Damp", v = self.particleDamp, fmn = 0, fmx = 20, min = 0, max = 10, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		c.floatSliderGrp(l = " G.Smooth", v = self.goalSmooth, fmn = 0, fmx = 20, min = 0, max = 10, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		c.floatSliderGrp(l = " G.Weight", v = self.goalWeight, fmn = 0, fmx = 1, min = 0, max = 1, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		# c.gridLayout(numberOfColumns = 3, cellWidthHeight = (self.windowWidth / 3, self.windowHeight))
+		# c.button(l = "SET", bgc = self.cWhite)
+		# c.button(l = "GET", bgc = self.cWhite)
+		# c.checkBox(l = " Auto mode", v = True)
 
-		c.button(l = "BAKE TO OBJECT", en=0)
-		c.button(l = "BAKE TO LAYER", en=0)
-
-		c.button(l = "CLEANUP", c = ccCleanup)
-		c.button(l = "DELETE NUCLEUS", c = ccDeleteNucleus)
-
+		c.frameLayout(l = "NUCLEUS", p = layout, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
+		c.floatSliderGrp(l = " Time Scale", v = self.nucleusTimeScale, fmn = 0, fmx = 20, min = 0, max = 10, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		c.floatSliderGrp(l = " Gravity", v = self.nucleusGravity, fmn = -1000, fmx = 1000, min = 0, max = 20, field = True, precision = 3, width = self.windowWidth, columnAlign = (1, "left"), columnWidth3 = (self.sliderWidth1, self.sliderWidth2, self.sliderWidth3))
+		# c.floatFieldGrp(l = " Start Frame", value1 = 0, columnAlign = (1, "left"), columnWidth2 = (60, 45))
+		# c.gridLayout(numberOfColumns = 3, cellWidthHeight = (self.windowWidth / 3, self.windowHeight))
+		# c.button(l = "SET", bgc = self.cWhite)
+		# c.button(l = "GET", bgc = self.cWhite)
+		# c.checkBox(l = " Auto mode", v = True)
 
 		# RUN WINDOW
 		c.showWindow(self.window_name)
@@ -89,6 +132,26 @@ class GETOOLS_class:
 		else:
 			c.file(new = 1, f = 1)
 
+
+
+
+	def _SelectObjects(self, *args):
+		if (self.selected == None):
+			return
+		if (len(self.selected) > 0):
+			c.select(self.selected, r=1)
+
+	def _SelectParticle(self, *args):
+		if (self.selected == None):
+			return
+		if (len(self.selected) > 0):
+			particle = self.nameParticle + self.selected[0]
+			if (c.objExists(particle)):
+				c.select(particle, r=1)
+
+	def _SelectNucleus(self, *args):
+		if (c.objExists(self.nameNucleus)):
+			c.select(self.nameNucleus, r=1)
 
 
 	def _RunMainLogic(self, *args):
@@ -109,43 +172,19 @@ class GETOOLS_class:
 		c.select(cl=1)
 		if (c.objExists(self.nameMainGroup)):
 			c.delete(self.nameMainGroup)
-		# c.group(em=1, n = self.nameMainGroup)
-		grp = c.group(em=1, n = self.nameMainGroup)
+		c.group(em=1, n = self.nameMainGroup)
 
-		# Run setup cycle for all seleted
-		for i in range(len(self.selected)):
-			if (i == 0):
-				self._CreateSetup(self.selected[i])
-			else:
-				self._CreateSetup(self.selected[i], self.selected[i-1])
+		# Run setup logic
+		self._CreateSetup(self.selected[0])
 		
-		# Reselect initial selected objects 
 		c.select(self.selected, r = 1)
-		
 		self.simulated = True
 
-
-	def _CreateSetup(self, objCurrent, objLast=None, *args):
+	def _CreateSetup(self, objCurrent, *args):
 		# Names
-		grpRefName = self.nameGrpRef + "_" + objCurrent
-		grpOffsetName = self.nameGrpOffset + "_" + objCurrent
-		locGoalName = self.nameLocGoal + "_" + objCurrent
-		locParticleName = self.nameLocParticle + "_" + objCurrent
-		particleName = self.nameParticle + "_" + objCurrent
-
-		# Create ref group
-		# c.select(cl=1)
-		# _grpRef = c.group(n = grpRefName, em=1)
-		# c.parent(_grpRef, self.nameMainGroup)
-		# c.matchTransform(_grpRef, objCurrent, pos = True, rot = True)
-		# c.parentConstraint(objCurrent, _grpRef, maintainOffset=1)
-
-		# Create offset group
-		# c.select(cl=1)
-		# _grpOffset = c.group(n = grpOffsetName, em=1)
-		# c.parent(_grpOffset, _grpRef)
-		# c.matchTransform(_grpOffset, objCurrent, pos = True, rot = True)
-		# c.parentConstraint(objCurrent, _grpOffset, maintainOffset=1)
+		locGoalName = self.nameLocGoal + objCurrent
+		locParticleName = self.nameLocParticle + objCurrent
+		particleName = self.nameParticle + objCurrent
 
 		# Create locator for goal
 		_locGoal = c.spaceLocator(n = locGoalName)
@@ -153,20 +192,24 @@ class GETOOLS_class:
 		c.matchTransform(_locGoal, objCurrent, pos = True, rot = True)
 		c.parentConstraint(objCurrent, _locGoal, maintainOffset=1)
 
-		# Constrain base locator
-		# if (objLast == None):
-		# 	# c.parent(_locGoal, self.nameMainGroup)
-		# 	c.parentConstraint(objCurrent, _locGoal, maintainOffset=1)
-		# else:
-		# 	# c.parent(_locGoal, self.nameLocParticle + "_" + objLast)
-		# 	# c.parentConstraint(self.nameLocParticle + "_" + objLast, _locGoal, maintainOffset=1)
-		# 	c.connectAttr(self.nameParticle + "_" + objLast + ".center", _locGoal[0] + ".translate", f = True)
-
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
 		_particle = c.nParticle(n = particleName, position = _position, conserve = 1)
-		_goal = c.goal(weight = self.weight, useTransformAsGoal = 1, goal = _locGoal)
+		c.goal(useTransformAsGoal = 1, goal = _locGoal)
 		c.parent(_particle[0], self.nameMainGroup)
+
+		# Set simulation attributes
+		c.setAttr(_particle[0] + "Shape.radius", self.particleSize)
+		c.setAttr(_particle[0] + "Shape.solverDisplay", 1)
+		c.setAttr(_particle[0] + "Shape.conserve", self.particleConserve)
+		c.setAttr(_particle[0] + "Shape.drag", self.particleDrag)
+		c.setAttr(_particle[0] + "Shape.damp", self.particleDamp)
+		c.setAttr(_particle[0] + "Shape.goalSmoothness", self.goalSmooth)
+		c.setAttr(_particle[0] + "Shape.goalWeight[0]", self.goalWeight)
+		_nucleus = c.ls(type='nucleus')
+		c.setAttr(_nucleus[0] + ".timeScale", self.nucleusTimeScale)
+		c.setAttr(_nucleus[0] + ".gravity", self.nucleusGravity)
+		c.setAttr(_nucleus[0] + ".startFrame", self.timeStart)
 
 		# Create locator for particle
 		_locParticle = c.spaceLocator(n = locParticleName)
@@ -183,17 +226,13 @@ class GETOOLS_class:
 		# Revert cached timeslider
 		if (self.simulated):
 			c.currentTime(self.timeCurrent)
-		# 	c.select(self.selected, r = 1)
-		# else:
-		# 	c.select(cl=1)
 
 		c.select(cl=1)
-
+		self._DeleteNucleus()
 
 	def _DeleteNucleus(self, *args):
 		_nucleus = c.ls(type='nucleus')
 		if (len(_nucleus) > 0):
-			# c.warning("Nucleus nodes were removed")
 			c.delete(_nucleus)
 
 
