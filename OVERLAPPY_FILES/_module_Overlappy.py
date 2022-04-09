@@ -45,7 +45,7 @@ class OVLP:
 		self.particleDamp = 0
 		self.goalSmooth = 3
 		self.goalWeight = 0.5
-		self.nucleusGravity = 9.8
+		self.nucleusGravity = 0
 		self.nucleusTimeScale = 1
 
 		### NAMES
@@ -112,33 +112,50 @@ class OVLP:
 
 		# SLIDERS
 		class classSlider:
-			def __init__(self, label="label", attribute="", value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, precision=3):
+			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, precision=3):
 				self._label = label
 				self._attribute = attribute
+				self._name = name
+				self._nameAdd = nameAdd
 				self._value = value
 				self._fmin = fieldMin
 				self._fmax = fieldMax
 				self._min = min
 				self._max = max
 				self._precision = precision
-
 				self.markerColorDefault = OVLP.cGray
 				self.markerColorChanged = OVLP.cBlue
-
 				c.flowLayout(p=parent)
 				self._slider = c.floatSliderGrp(l = " " + self._label, v = self._value, cc = _OVERLAPPY._ValuesSet, dc = _OVERLAPPY._ValuesSet, fmn = self._fmin, fmx = self._fmax, min = self._min, max = self._max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth1, OVLP.sliderWidth2, OVLP.sliderWidth3))
 				c.popupMenu(p = self._slider)
 				c.menuItem(l = "reset", c = self.ValuesReset)
+				c.menuItem(l = "get value", c = self.ValuesGet)
 				self._marker = c.button(l="", enable=0, w = OVLP.markerWidth, bgc = self.markerColorDefault)
 			
-			def ValuesSet(self, firstName):
+			def ValuesGet(self, *args):
+				firstName = _OVERLAPPY.selected
+				if (firstName == None):
+					c.warning("Can't get value, because simulation objects doesn't exists")
+					return
+				if (self._nameAdd):
+					firstName = self._name + firstName[0] + self._attribute
+				else:
+					firstName = self._name + self._attribute
+				value = c.getAttr(firstName)
+				c.floatSliderGrp(self._slider, e=1, v = value)
+
+			def ValuesSet(self):
 				_value = c.floatSliderGrp(self._slider, q=1, v=1)
 				if (_value != self._value):
 					c.button(self._marker, e=1, bgc = self.markerColorChanged)
 				else:
 					c.button(self._marker, e=1, bgc = self.markerColorDefault)
-
+				firstName = _OVERLAPPY.selected
 				if (firstName != None):
+					if (self._nameAdd):
+						firstName = self._name + firstName[0]
+					else:
+						firstName = self._name
 					c.setAttr(firstName + self._attribute, _value)
 			
 			def ValuesReset(self, *args):
@@ -148,15 +165,14 @@ class OVLP:
 
 
 		layoutSliders = c.frameLayout(l = "SETTINGS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
-
-		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", self.particleRadius, 0, 1000, 0, 50, layoutSliders)
-		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", self.particleConserve, 0, 1, 0, 1, layoutSliders)
-		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", self.particleDrag, 0, 1000, 0, 2, layoutSliders)
-		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", self.particleDamp, 0, 1000, 0, 10, layoutSliders)
-		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", self.goalSmooth, 0, 1000, 0, 10, layoutSliders)
-		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", self.goalWeight, 0, 1, 0, 1, layoutSliders)
-		self.sliderNucleusGravity = classSlider("Gravity", ".gravity", self.nucleusGravity, -1000, 1000, 0, 20, layoutSliders)
-		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", self.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders)
+		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", self.nameParticle, True, self.particleRadius, 0, 1000, 0, 50, layoutSliders)
+		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", self.nameParticle, True, self.particleConserve, 0, 1, 0, 1, layoutSliders)
+		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", self.nameParticle, True, self.particleDrag, 0, 1000, 0, 2, layoutSliders)
+		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", self.nameParticle, True, self.particleDamp, 0, 1000, 0, 10, layoutSliders)
+		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", self.nameParticle, True, self.goalSmooth, 0, 1000, 0, 10, layoutSliders)
+		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", self.nameParticle, True, self.goalWeight, 0, 1, 0, 1, layoutSliders)
+		# self.sliderNucleusGravity = classSlider("Gravity", ".gravity", self.nameNucleus, False, self.nucleusGravity, -10000, 10000, 0, 20, layoutSliders)
+		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", self.nameNucleus, False, self.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders)
 		
 		# c.floatFieldGrp(l = " Start Frame", value1 = 0, columnAlign = (1, "left"), columnWidth2 = (60, 45))
 		# c.gridLayout(numberOfColumns = 3, cellWidthHeight = (self.windowWidth / 3, self.windowHeight))
@@ -230,6 +246,7 @@ class OVLP:
 		c.parent(_locGoal, self.nameMainGroup)
 		c.matchTransform(_locGoal, objCurrent, pos = True, rot = True)
 		c.parentConstraint(objCurrent, _locGoal, maintainOffset=1)
+		c.setAttr(_locGoal[0] + ".visibility", 0)
 
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
@@ -249,39 +266,35 @@ class OVLP:
 		c.setAttr(_nucleus[0] + ".timeScale", self.nucleusTimeScale)
 		c.setAttr(_nucleus[0] + ".gravity", self.nucleusGravity)
 		c.setAttr(_nucleus[0] + ".startFrame", self.timeStart)
+		c.setAttr(_nucleus[0] + ".visibility", 0)
 
 		# Create locator for particle
 		_locParticle = c.spaceLocator(n = locParticleName)
 		c.parent(_locParticle, self.nameMainGroup)
 		c.matchTransform(_locParticle, objCurrent, pos = True, rot = True)
 		c.connectAttr(_particle[0] + ".center", _locParticle[0] + ".translate", f = True)
+		c.setAttr(_locParticle[0] + ".visibility", 0)
+
 
 	def _ValuesSet(self, *args):
-		if (self.selected == None):
-			_nameParticle = None
-			_nameNucleus = None
-		else:
-			_nameParticle = self.nameParticle + self.selected[0]
-			_nameNucleus = self.nameNucleus
-			
-		self.sliderParticleRadius.ValuesSet(_nameParticle)
-		self.sliderParticleConserve.ValuesSet(_nameParticle)
-		self.sliderParticleDrag.ValuesSet(_nameParticle)
-		self.sliderParticleDamp.ValuesSet(_nameParticle)
-		self.sliderGoalSmooth.ValuesSet(_nameParticle)
-		self.sliderGoalWeight.ValuesSet(_nameParticle)
-		self.sliderNucleusGravity.ValuesSet(_nameNucleus)
-		self.sliderNucleusTimeScale.ValuesSet(_nameNucleus)
-	
+		self.sliderParticleRadius.ValuesSet()
+		self.sliderParticleConserve.ValuesSet()
+		self.sliderParticleDrag.ValuesSet()
+		self.sliderParticleDamp.ValuesSet()
+		self.sliderGoalSmooth.ValuesSet()
+		self.sliderGoalWeight.ValuesSet()
+		# self.sliderNucleusGravity.ValuesSet()
+		self.sliderNucleusTimeScale.ValuesSet()
 	def _ValuesReset(self, *args):
 		self.sliderParticleConserve.ValuesReset()
 		self.sliderParticleDrag.ValuesReset()
 		self.sliderParticleDamp.ValuesReset()
 		self.sliderGoalSmooth.ValuesReset()
 		self.sliderGoalWeight.ValuesReset()
-		self.sliderNucleusGravity.ValuesReset()
+		# self.sliderNucleusGravity.ValuesReset()
 		self.sliderNucleusTimeScale.ValuesReset()
 		self._ValuesSet()
+	
 
 	def _Cleanup(self, *args):
 		# Clear selected
