@@ -24,6 +24,23 @@ class OVLP:
 	sliderWidth3 = 10
 	markerWidth = 6
 
+	### SETTINGS # TODO: move to preset
+	particleRadius = 25
+	particleConserve = 1
+	particleDrag = 0.01
+	particleDamp = 0
+	goalSmooth = 3
+	goalWeight = 0.5
+	nucleusGravity = 0
+	nucleusTimeScale = 1
+
+	### NAMES
+	nameMainGroup = "_OverlappyMainGroup_"
+	nameLocGoal = "_locGoal_"
+	nameLocParticle = "_locParticle_"
+	nameParticle = "_particle_"
+	nameNucleus = "nucleus1" # TODO: get nucleus node from scene
+
 	### COLORS
 	cRed = [1, .5, .5]
 	cOrange = [1, .6, .3]
@@ -38,23 +55,6 @@ class OVLP:
 	cBlack = [0, 0, 0]
 
 	def __init__(self):
-		### SETTINGS # TODO: move to preset
-		self.particleRadius = 25
-		self.particleConserve = 1
-		self.particleDrag = 0.01
-		self.particleDamp = 0
-		self.goalSmooth = 3
-		self.goalWeight = 0.5
-		self.nucleusGravity = 0
-		self.nucleusTimeScale = 1
-
-		### NAMES
-		self.nameMainGroup = "_OverlappyMainGroup_"
-		self.nameLocGoal = "_locGoal_"
-		self.nameLocParticle = "_locParticle_"
-		self.nameParticle = "_particle_"
-		self.nameNucleus = "nucleus1" # TODO: get nucleus node from scene
-
 		### READONLY
 		self.layoutMain = None
 		self.selected = None
@@ -74,11 +74,11 @@ class OVLP:
 		self.sliderNucleusTimeScale = None
 	def CreateUI(self):
 		# WINDOW
-		if c.window(self.window_name, exists = True):
-			c.deleteUI(self.window_name)
-		c.window(self.window_name, title = OVLP.titleText, mxb = 0, s = 0)
-		c.window(self.window_name, e = True, rtf = True, wh = (OVLP.windowWidth, OVLP.windowHeight))
-		self.layoutMain = c.columnLayout(adj = True, h = self.windowHeight)
+		if c.window(OVLP.window_name, exists = True):
+			c.deleteUI(OVLP.window_name)
+		c.window(OVLP.window_name, title = OVLP.titleText, mxb = 0, s = 0)
+		c.window(OVLP.window_name, e = True, rtf = True, wh = (OVLP.windowWidth, OVLP.windowHeight))
+		self.layoutMain = c.columnLayout(adj = True, h = OVLP.windowHeight)
 
 		# HEAD MENU
 		c.menuBarLayout()
@@ -100,15 +100,11 @@ class OVLP:
 		c.button(l = "SELECT PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
 		c.button(l = "SELECT NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
 		c.button(l = "RUN", c = ccRunLogic, bgc = OVLP.cGreen)
-		c.button(l = "none", enable=0)
-		c.button(l = "none", enable=0)
-		# c.button(l = "BAKE TO OBJECT", enable=0)
-		# c.button(l = "BAKE TO LAYER", enable=0)
-		# c.button(l = "none", enable=0)
+		c.button(l = "BAKE TO OBJECT", enable=0)
+		c.button(l = "BAKE TO LAYER", enable=0)
 		c.button(l = "CLEANUP", c = ccCleanup, bgc = OVLP.cYellow)
 		c.button(l = "RESET VALUES", c = ccReset, bgc = OVLP.cOrange)
 		c.button(l = "none", enable=0)
-
 
 		# SLIDERS
 		class classSlider:
@@ -165,14 +161,14 @@ class OVLP:
 
 
 		layoutSliders = c.frameLayout(l = "SETTINGS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
-		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", self.nameParticle, True, self.particleRadius, 0, 1000, 0, 50, layoutSliders)
-		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", self.nameParticle, True, self.particleConserve, 0, 1, 0, 1, layoutSliders)
-		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", self.nameParticle, True, self.particleDrag, 0, 1000, 0, 2, layoutSliders)
-		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", self.nameParticle, True, self.particleDamp, 0, 1000, 0, 10, layoutSliders)
-		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", self.nameParticle, True, self.goalSmooth, 0, 1000, 0, 10, layoutSliders)
-		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", self.nameParticle, True, self.goalWeight, 0, 1, 0, 1, layoutSliders)
-		# self.sliderNucleusGravity = classSlider("Gravity", ".gravity", self.nameNucleus, False, self.nucleusGravity, -10000, 10000, 0, 20, layoutSliders)
-		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", self.nameNucleus, False, self.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders)
+		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, 0, 1000, 0, 50, layoutSliders)
+		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, 0, 1, 0, 1, layoutSliders)
+		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, 0, 1000, 0, 2, layoutSliders)
+		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, 0, 1000, 0, 10, layoutSliders)
+		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, 0, 1000, 0, 10, layoutSliders)
+		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, 0, 1, 0, 1, layoutSliders)
+		# self.sliderNucleusGravity = classSlider("Gravity", ".gravity", OVLP.nameNucleus, False, OVLP.nucleusGravity, -10000, 10000, 0, 20, layoutSliders)
+		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", OVLP.nameNucleus, False, OVLP.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders)
 		
 		# c.floatFieldGrp(l = " Start Frame", value1 = 0, columnAlign = (1, "left"), columnWidth2 = (60, 45))
 		# c.gridLayout(numberOfColumns = 3, cellWidthHeight = (self.windowWidth / 3, self.windowHeight))
@@ -185,7 +181,7 @@ class OVLP:
 		self.Resize_UI()
 
 	def Resize_UI(self, *args):
-		c.window(self.window_name, e = True, h = self.windowHeight, rtf = True)
+		c.window(OVLP.window_name, e = True, h = OVLP.windowHeight, rtf = True)
 	def SceneReload(self, *args):
 		currentScene = c.file(q = True, sceneName = True)
 		if(currentScene):
@@ -193,6 +189,10 @@ class OVLP:
 		else:
 			c.file(new = 1, f = 1)
 
+	def _ScanObjects(self, *args):
+		pass
+		# if (self.selected == None):
+		# 	return
 	def _SelectObjects(self, *args):
 		if (self.selected == None):
 			return
@@ -202,12 +202,12 @@ class OVLP:
 		if (self.selected == None):
 			return
 		if (len(self.selected) > 0):
-			particle = self.nameParticle + self.selected[0]
+			particle = OVLP.nameParticle + self.selected[0]
 			if (c.objExists(particle)):
 				c.select(particle, r=1)
 	def _SelectNucleus(self, *args):
-		if (c.objExists(self.nameNucleus)):
-			c.select(self.nameNucleus, r=1)
+		if (c.objExists(OVLP.nameNucleus)):
+			c.select(OVLP.nameNucleus, r=1)
 
 	def _RunMainLogic(self, *args):
 		# Get selected objects
@@ -226,9 +226,9 @@ class OVLP:
 
 		# Create group
 		c.select(cl=1)
-		if (c.objExists(self.nameMainGroup)):
-			c.delete(self.nameMainGroup)
-		c.group(em=1, n = self.nameMainGroup)
+		if (c.objExists(OVLP.nameMainGroup)):
+			c.delete(OVLP.nameMainGroup)
+		c.group(em=1, n = OVLP.nameMainGroup)
 
 		# Run setup logic
 		self._CreateSetup(self.selected[0])
@@ -237,13 +237,13 @@ class OVLP:
 		self.simulated = True
 	def _CreateSetup(self, objCurrent, *args):
 		# Names
-		locGoalName = self.nameLocGoal + objCurrent
-		locParticleName = self.nameLocParticle + objCurrent
-		particleName = self.nameParticle + objCurrent
+		locGoalName = OVLP.nameLocGoal + objCurrent
+		locParticleName = OVLP.nameLocParticle + objCurrent
+		particleName = OVLP.nameParticle + objCurrent
 
 		# Create locator for goal
 		_locGoal = c.spaceLocator(n = locGoalName)
-		c.parent(_locGoal, self.nameMainGroup)
+		c.parent(_locGoal, OVLP.nameMainGroup)
 		c.matchTransform(_locGoal, objCurrent, pos = True, rot = True)
 		c.parentConstraint(objCurrent, _locGoal, maintainOffset=1)
 		c.setAttr(_locGoal[0] + ".visibility", 0)
@@ -252,25 +252,25 @@ class OVLP:
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
 		_particle = c.nParticle(n = particleName, position = _position, conserve = 1)
 		c.goal(useTransformAsGoal = 1, goal = _locGoal)
-		c.parent(_particle[0], self.nameMainGroup)
+		c.parent(_particle[0], OVLP.nameMainGroup)
 
 		# Set simulation attributes
-		c.setAttr(_particle[0] + "Shape.radius", self.particleRadius)
+		c.setAttr(_particle[0] + "Shape.radius", OVLP.particleRadius)
 		c.setAttr(_particle[0] + "Shape.solverDisplay", 1)
-		c.setAttr(_particle[0] + "Shape.conserve", self.particleConserve)
-		c.setAttr(_particle[0] + "Shape.drag", self.particleDrag)
-		c.setAttr(_particle[0] + "Shape.damp", self.particleDamp)
-		c.setAttr(_particle[0] + "Shape.goalSmoothness", self.goalSmooth)
-		c.setAttr(_particle[0] + "Shape.goalWeight[0]", self.goalWeight)
+		c.setAttr(_particle[0] + "Shape.conserve", OVLP.particleConserve)
+		c.setAttr(_particle[0] + "Shape.drag", OVLP.particleDrag)
+		c.setAttr(_particle[0] + "Shape.damp", OVLP.particleDamp)
+		c.setAttr(_particle[0] + "Shape.goalSmoothness", OVLP.goalSmooth)
+		c.setAttr(_particle[0] + "Shape.goalWeight[0]", OVLP.goalWeight)
 		_nucleus = c.ls(type='nucleus')
-		c.setAttr(_nucleus[0] + ".timeScale", self.nucleusTimeScale)
-		c.setAttr(_nucleus[0] + ".gravity", self.nucleusGravity)
+		c.setAttr(_nucleus[0] + ".timeScale", OVLP.nucleusTimeScale)
+		c.setAttr(_nucleus[0] + ".gravity", OVLP.nucleusGravity)
 		c.setAttr(_nucleus[0] + ".startFrame", self.timeStart)
 		c.setAttr(_nucleus[0] + ".visibility", 0)
 
 		# Create locator for particle
 		_locParticle = c.spaceLocator(n = locParticleName)
-		c.parent(_locParticle, self.nameMainGroup)
+		c.parent(_locParticle, OVLP.nameMainGroup)
 		c.matchTransform(_locParticle, objCurrent, pos = True, rot = True)
 		c.connectAttr(_particle[0] + ".center", _locParticle[0] + ".translate", f = True)
 		c.setAttr(_locParticle[0] + ".visibility", 0)
@@ -300,8 +300,8 @@ class OVLP:
 		# Clear selected
 		self.selected = None
 		# Delete group
-		if (c.objExists(self.nameMainGroup)):
-			c.delete(self.nameMainGroup)
+		if (c.objExists(OVLP.nameMainGroup)):
+			c.delete(OVLP.nameMainGroup)
 		# Revert cached timeslider
 		if (self.simulated):
 			c.currentTime(self.timeCurrent)

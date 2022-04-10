@@ -1,6 +1,6 @@
 //Maya ASCII 2022 scene
 //Name: test_scene_01.ma
-//Last modified: Sat, Apr 09, 2022 01:16:07 AM
+//Last modified: Sun, Apr 10, 2022 02:45:21 PM
 //Codeset: 1251
 requires maya "2022";
 requires "mtoa" "5.0.0.1";
@@ -10,11 +10,11 @@ fileInfo "product" "Maya 2022";
 fileInfo "version" "2022";
 fileInfo "cutIdentifier" "202110272215-ad32f8f1e6";
 fileInfo "osv" "Windows 10 Pro v2009 (Build: 19044)";
-fileInfo "UUID" "DB80DFEF-4DEB-7891-6CB3-97A1E93CA1D9";
+fileInfo "UUID" "71BE168D-4F49-DA9D-A09E-2D8603053097";
 createNode transform -s -n "persp";
 	rename -uid "F2EFB51E-4208-1E9B-5F40-068ED671E282";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 633.834544651334 278.73354780375422 252.41944108878985 ;
+	setAttr ".t" -type "double3" 623.83830575135437 302.42179373549197 259.73747153249968 ;
 	setAttr ".r" -type "double3" -14.138352729607018 65.000000000004391 3.7629167612916491e-15 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "559007C1-4418-043B-E705-8DAF85ED4CA7";
@@ -284,19 +284,19 @@ createNode mesh -n "pCubeShape6" -p "pCube6";
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
 	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "F8149F7E-4277-4605-3A20-8F89A1E9A06A";
+	rename -uid "1CB8A46D-4162-BB5A-A736-E89AA23D20CE";
 	setAttr -s 3 ".lnk";
 	setAttr -s 3 ".slnk";
 createNode shapeEditorManager -n "shapeEditorManager";
-	rename -uid "9B570059-4182-DAE9-74A3-7C9E69E9E232";
+	rename -uid "E64AE823-4619-96A8-D4DC-F2970ABB264B";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
-	rename -uid "125072D7-4F78-89D8-6610-9BBAA5EFAB2F";
+	rename -uid "9CA81E7C-4A03-DF8E-7D02-C9BAC45E1491";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "FEDC4671-4281-938B-4FEE-39B73AB040D3";
+	rename -uid "ECD42AA4-4086-1A67-C131-1687497A3DD2";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "F981115F-414C-5A15-6771-1A8ED2DDD70A";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "720F1DCC-4A05-14AB-4605-67BAA7E4497C";
+	rename -uid "977C1016-49DE-7037-2BD8-C38640121CBA";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "D52DDD41-4E11-5313-C822-C0A1E337E5B6";
 	setAttr ".g" yes;
@@ -314,7 +314,7 @@ createNode particleCloud -n "npPointsVolume";
 	rename -uid "73A9946C-4F6E-B38D-D0D8-8F9A6CF9C30B";
 createNode script -n "sceneConfigurationScriptNode";
 	rename -uid "D71A42A1-4712-B81B-9FBC-CA92A2B35E24";
-	setAttr ".b" -type "string" "playbackOptions -min 0 -max 110 -ast 0 -aet 110 ";
+	setAttr ".b" -type "string" "playbackOptions -min 0 -max 120 -ast 0 -aet 120 ";
 	setAttr ".st" 6;
 createNode animCurveTU -n "pCube2_visibility";
 	rename -uid "04825B87-44CB-65BA-A33E-F190989833DC";
