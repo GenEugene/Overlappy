@@ -55,22 +55,27 @@ class OVLP:
 	cBlack = [0, 0, 0]
 
 	def __init__(self):
-		### READONLY
-		self.layoutMain = None
+		### OBJECTS
 		self.selected = None
+		self.locGoal = None
+		self.locParticle = None
+		self.particle = None
+
+		### READONLY
 		self.timeCurrent = None
 		self.timeStart = None
 		self.timeEnd = None
 		self.simulated = False
 
-		### SLIDERS
+		### UI
+		self.layoutMain = None
 		self.sliderParticleRadius = None
 		self.sliderParticleConserve = None
 		self.sliderParticleDrag = None
 		self.sliderParticleDamp = None
 		self.sliderGoalSmooth = None
 		self.sliderGoalWeight = None
-		self.sliderNucleusGravity = None
+		# self.sliderNucleusGravity = None
 		self.sliderNucleusTimeScale = None
 	def CreateUI(self):
 		# WINDOW
@@ -94,14 +99,15 @@ class OVLP:
 		ccSelectParticle = self._SelectParticle
 		ccSelectNucleus = self._SelectNucleus
 		ccRunLogic = self._RunMainLogic
+		ccScan = self._ScanObjects
 		ccCleanup = self._Cleanup
 		ccReset = self._ValuesReset
 		c.button(l = "SELECT OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
 		c.button(l = "SELECT PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
 		c.button(l = "SELECT NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
 		c.button(l = "RUN", c = ccRunLogic, bgc = OVLP.cGreen)
-		c.button(l = "BAKE TO OBJECT", enable=0)
-		c.button(l = "BAKE TO LAYER", enable=0)
+		c.button(l = "SCAN", c = ccScan)
+		c.button(l = "none", enable=0)
 		c.button(l = "CLEANUP", c = ccCleanup, bgc = OVLP.cYellow)
 		c.button(l = "RESET VALUES", c = ccReset, bgc = OVLP.cOrange)
 		c.button(l = "none", enable=0)
@@ -190,21 +196,62 @@ class OVLP:
 			c.file(new = 1, f = 1)
 
 	def _ScanObjects(self, *args):
-		pass
-		# if (self.selected == None):
-		# 	return
+		if (not c.objExists(OVLP.nameMainGroup)):
+			c.warning("Overlappy object doesn't exists")
+			return
+		children = c.listRelatives(OVLP.nameMainGroup)
+		if (len(children) == 0):
+			return
+		objectName = ""
+		for item in children:
+			splitNames = item.split("_")
+			lastName = splitNames[-1]
+			if (objectName == ""):
+				objectName = lastName
+			else:
+				if (objectName == lastName):
+					continue
+				else:
+					c.warning("Suffix '{0}' don't equals to '{1}'".format(objectName, lastName))
+		if (c.objExists(self.selected)):
+			self.selected = objectName
+		if (c.objExists(self.locGoal)):
+			self.locGoal = OVLP.nameLocGoal + objectName
+		if (c.objExists(self.locParticle)):
+			self.locParticle = OVLP.nameLocParticle + objectName
+		if (c.objExists(self.particle)):
+			self.particle = OVLP.nameParticle + objectName
+
+	def _Select(self, name, *args): # TODO
+		if (name != None):
+			if (c.objExists(name)):
+				c.select(name, r=1)
+			else:
+				c.warning("'{0}' object doesn't exists. Variable cleared".format("placeholder"))
+				name = None
+				return
+		else:
+			c.warning("'{0}' object doesn't exists".format("placeholder"))
+	
+
 	def _SelectObjects(self, *args):
 		if (self.selected == None):
 			return
 		if (len(self.selected) > 0):
 			c.select(self.selected, r=1)
-	def _SelectParticle(self, *args):
-		if (self.selected == None):
-			return
-		if (len(self.selected) > 0):
-			particle = OVLP.nameParticle + self.selected[0]
-			if (c.objExists(particle)):
-				c.select(particle, r=1)
+	
+	def _SelectParticle(self, *args): # TODO
+		self._Select(self.particle)
+
+		# if (self.particle != None):
+		# 	if (c.objExists(self.particle)):
+		# 		c.select(self.particle, r=1)
+		# 	else:
+		# 		c.warning("Particle object doesn't exists. Variable cleared")
+		# 		self.particle = None
+		# else:
+		# 	c.warning("Particle object doesn't exists")
+	
 	def _SelectNucleus(self, *args):
 		if (c.objExists(OVLP.nameNucleus)):
 			c.select(OVLP.nameNucleus, r=1)
@@ -242,26 +289,26 @@ class OVLP:
 		particleName = OVLP.nameParticle + objCurrent
 
 		# Create locator for goal
-		_locGoal = c.spaceLocator(n = locGoalName)
-		c.parent(_locGoal, OVLP.nameMainGroup)
-		c.matchTransform(_locGoal, objCurrent, pos = True, rot = True)
-		c.parentConstraint(objCurrent, _locGoal, maintainOffset=1)
-		c.setAttr(_locGoal[0] + ".visibility", 0)
+		self.locGoal = c.spaceLocator(n = locGoalName)
+		c.parent(self.locGoal, OVLP.nameMainGroup)
+		c.matchTransform(self.locGoal, objCurrent, pos = True, rot = True)
+		c.parentConstraint(objCurrent, self.locGoal, maintainOffset=1)
+		c.setAttr(self.locGoal[0] + ".visibility", 0)
 
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
-		_particle = c.nParticle(n = particleName, position = _position, conserve = 1)
-		c.goal(useTransformAsGoal = 1, goal = _locGoal)
-		c.parent(_particle[0], OVLP.nameMainGroup)
+		self.particle = c.nParticle(n = particleName, position = _position, conserve = 1)[0]
+		c.goal(useTransformAsGoal = 1, goal = self.locGoal)
+		c.parent(self.particle, OVLP.nameMainGroup)
 
 		# Set simulation attributes
-		c.setAttr(_particle[0] + "Shape.radius", OVLP.particleRadius)
-		c.setAttr(_particle[0] + "Shape.solverDisplay", 1)
-		c.setAttr(_particle[0] + "Shape.conserve", OVLP.particleConserve)
-		c.setAttr(_particle[0] + "Shape.drag", OVLP.particleDrag)
-		c.setAttr(_particle[0] + "Shape.damp", OVLP.particleDamp)
-		c.setAttr(_particle[0] + "Shape.goalSmoothness", OVLP.goalSmooth)
-		c.setAttr(_particle[0] + "Shape.goalWeight[0]", OVLP.goalWeight)
+		c.setAttr(self.particle + "Shape.radius", OVLP.particleRadius)
+		c.setAttr(self.particle + "Shape.solverDisplay", 1)
+		c.setAttr(self.particle + "Shape.conserve", OVLP.particleConserve)
+		c.setAttr(self.particle + "Shape.drag", OVLP.particleDrag)
+		c.setAttr(self.particle + "Shape.damp", OVLP.particleDamp)
+		c.setAttr(self.particle + "Shape.goalSmoothness", OVLP.goalSmooth)
+		c.setAttr(self.particle + "Shape.goalWeight[0]", OVLP.goalWeight)
 		_nucleus = c.ls(type='nucleus')
 		c.setAttr(_nucleus[0] + ".timeScale", OVLP.nucleusTimeScale)
 		c.setAttr(_nucleus[0] + ".gravity", OVLP.nucleusGravity)
@@ -269,11 +316,11 @@ class OVLP:
 		c.setAttr(_nucleus[0] + ".visibility", 0)
 
 		# Create locator for particle
-		_locParticle = c.spaceLocator(n = locParticleName)
-		c.parent(_locParticle, OVLP.nameMainGroup)
-		c.matchTransform(_locParticle, objCurrent, pos = True, rot = True)
-		c.connectAttr(_particle[0] + ".center", _locParticle[0] + ".translate", f = True)
-		c.setAttr(_locParticle[0] + ".visibility", 0)
+		self.locParticle = c.spaceLocator(n = locParticleName)
+		c.parent(self.locParticle, OVLP.nameMainGroup)
+		c.matchTransform(self.locParticle, objCurrent, pos = True, rot = True)
+		c.connectAttr(self.particle + ".center", self.locParticle[0] + ".translate", f = True)
+		c.setAttr(self.locParticle[0] + ".visibility", 0)
 
 
 	def _ValuesSet(self, *args):
