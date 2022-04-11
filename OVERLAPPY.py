@@ -31,11 +31,13 @@ class OVLP:
 	goalWeight = 0.5
 	nucleusTimeScale = 1
 
-	# NAMES
+	# NAMING
 	nameMainGroup = "_OverlappyMainGroup_"
 	nameLocGoal = "_locGoal_"
 	nameLocParticle = "_locParticle_"
 	nameParticle = "_particle_"
+	replaceSymbol1 = "_R1S_" # for "|"
+	replaceSymbol2 = "_R2S_" # for ":"
 
 	# COLORS
 	cRed = [1, .5, .5]
@@ -134,6 +136,7 @@ class OVLP:
 				firstName = _OVERLAPPY.selected
 				if (firstName == ""):
 					return
+				firstName = _OVERLAPPY.ConvertText(firstName)
 				if (self._nameAdd):
 					firstName = self._name + firstName
 				else:
@@ -143,10 +146,10 @@ class OVLP:
 					_value = c.getAttr(firstName + self._attribute)
 					c.floatSliderGrp(self._slider, e=1, v = _value)
 				except:
-					print("Can't get value")
+					# print("Can't get value")
 					return
 				# Marker update
-				if (_value != self._value):
+				if (round(_value, 3) != self._value):
 					c.button(self._marker, e=1, bgc = self.markerColorChanged)
 				else:
 					c.button(self._marker, e=1, bgc = self.markerColorDefault)
@@ -162,6 +165,7 @@ class OVLP:
 				if (firstName == ""):
 					return
 				# Add suffix or not
+				firstName = _OVERLAPPY.ConvertText(firstName)
 				if (self._nameAdd):
 					firstName = self._name + firstName
 				else:
@@ -170,7 +174,8 @@ class OVLP:
 				try:
 					c.setAttr(firstName + self._attribute, _value)
 				except:
-					print("Can't set value")
+					# print("Can't set value")
+					pass
 			def ValuesReset(self, *args):
 				c.button(self._marker, e=1, bgc = self.markerColorDefault)
 				c.floatSliderGrp(self._slider, e=1, v = self._value)
@@ -199,6 +204,16 @@ class OVLP:
 			c.file(new = 1, f = 1)
 
 	### LOGIC
+	def ConvertText(self, text, direction=True, *args):
+		if (direction):
+			_text = text.replace("|", OVLP.replaceSymbol1)
+			_text = _text.replace(":", OVLP.replaceSymbol2)
+			return _text
+		else:
+			_text = text.replace(OVLP.replaceSymbol1, "|")
+			_text = _text.replace(OVLP.replaceSymbol2, ":")
+			return _text
+	
 	def _Select(self, name="", *args):
 		if (name != ""):
 			if (c.objExists(name)):
@@ -244,9 +259,10 @@ class OVLP:
 		self.simulated = True
 	def _CreateSetup(self, objCurrent, *args):
 		# Names
-		locGoalName = OVLP.nameLocGoal + objCurrent
-		locParticleName = OVLP.nameLocParticle + objCurrent
-		particleName = OVLP.nameParticle + objCurrent
+		_objConverted = self.ConvertText(objCurrent)
+		locGoalName = OVLP.nameLocGoal + _objConverted
+		locParticleName = OVLP.nameLocParticle + _objConverted
+		particleName = OVLP.nameParticle + _objConverted
 
 		# Create locator for goal
 		self.locGoal = c.spaceLocator(n = locGoalName)
@@ -299,7 +315,11 @@ class OVLP:
 		# Try to get suffix name
 		objectName = ""
 		for item in children:
-			splitNames = item.split("_")
+			splitNames = item.split(OVLP.nameLocGoal)
+			if (len(splitNames) < 2):
+				splitNames = item.split(OVLP.nameLocParticle)
+				if (len(splitNames) < 2):
+					splitNames = item.split(OVLP.nameParticle)
 			lastName = splitNames[-1]
 			if (objectName == ""):
 				objectName = lastName
@@ -308,16 +328,15 @@ class OVLP:
 					continue
 				else:
 					c.warning("Suffix '{0}' don't equals to '{1}'".format(objectName, lastName))
-		
-		if (c.objExists(objectName)):
-			self.selected = objectName
+		_converted = self.ConvertText(objectName, False)
+		if (c.objExists(_converted)):
+			self.selected = _converted
 		if (c.objExists(OVLP.nameLocGoal + objectName)):
 			self.locGoal = OVLP.nameLocGoal + objectName
 		if (c.objExists(OVLP.nameLocParticle + objectName)):
 			self.locParticle = OVLP.nameLocParticle + objectName
 		if (c.objExists(OVLP.nameParticle + objectName)):
 			self.particle = OVLP.nameParticle + objectName
-		
 		_nucleus = c.ls(type='nucleus')
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
