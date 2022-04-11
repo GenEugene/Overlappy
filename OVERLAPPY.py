@@ -61,6 +61,8 @@ class OVLP:
 		self.nucleus = ""
 
 		# READONLY
+		self.positionStartGoal = None
+		self.positionStartParticle = None
 		self.timeCurrent = 0
 		self.timeStart = 0
 		self.timeEnd = 0
@@ -100,6 +102,7 @@ class OVLP:
 		ccResetValues = self._ValuesReset
 		ccGetValues = self._ValuesGet
 		ccCleanup = self._Cleanup
+		ccOffsetUpdate = self._OffsetUpdate
 		ccRunLogic = self._RunMainLogic
 		c.button(l = "SELECT OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
 		c.button(l = "SELECT PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
@@ -108,7 +111,7 @@ class OVLP:
 		c.button(l = "RESET VALUES", c = ccResetValues, bgc = OVLP.cOrange)
 		c.button(l = "GET VALUES", c = ccGetValues, bgc = OVLP.cOrange)
 		c.button(l = "CLEANUP", c = ccCleanup, bgc = OVLP.cYellow)
-		c.button(l = "", enable=0)
+		c.button(l = "OFFSET UPDATE", c = ccOffsetUpdate, bgc = OVLP.cPurple)
 		c.button(l = "RUN", c = ccRunLogic, bgc = OVLP.cGreen)
 
 		# SLIDERS
@@ -182,7 +185,7 @@ class OVLP:
 				_OVERLAPPY._ValuesSet()
 
 		layoutSliders = c.frameLayout(l = "SETTINGS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
-		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, 0, 1000, 0, 50, layoutSliders)
+		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, 0, 1000, 0, 100, layoutSliders)
 		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, 0, 1, 0, 1, layoutSliders)
 		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, 0, 10, 0, 1, layoutSliders)
 		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, 0, 10, 0, 1, layoutSliders)
@@ -270,12 +273,14 @@ class OVLP:
 		c.matchTransform(self.locGoal, objCurrent, pos = True, rot = True)
 		c.parentConstraint(objCurrent, self.locGoal, maintainOffset=1)
 		c.setAttr(self.locGoal[0] + ".visibility", 0)
+		self.positionStartGoal = c.xform(self.locGoal, q=1, t=1)
 
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
 		self.particle = c.nParticle(n = particleName, position = _position, conserve = 1)[0]
 		c.goal(useTransformAsGoal = 1, goal = self.locGoal)
 		c.parent(self.particle, OVLP.nameMainGroup)
+		self.positionStartParticle = c.xform(self.particle, q=1, t=1)
 
 		# Set simulation attributes
 		c.setAttr(self.particle + "Shape.radius", OVLP.particleRadius)
@@ -390,6 +395,36 @@ class OVLP:
 		except:
 			pass
 		# c.select(cl=1)
+
+	def _OffsetUpdate(self, *args):
+		c.currentTime(self.timeStart)
+
+		values = [200, 0, 0]
+
+		# Set locGoal constraint offset
+		_goalAttributes = [0, 0, 0]
+		_goalAttributes[0] = self.locGoal[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
+		_goalAttributes[1] = self.locGoal[0] + "_parentConstraint1.target[0].targetOffsetTranslateY"
+		_goalAttributes[2] = self.locGoal[0] + "_parentConstraint1.target[0].targetOffsetTranslateZ"
+		c.setAttr(_goalAttributes[0], values[0])
+		c.setAttr(_goalAttributes[1], values[1])
+		c.setAttr(_goalAttributes[2], values[2])
+
+		# Get offset
+		_goalPosition = c.xform(self.locGoal, q=1, t=1)
+		_goalOffset = [0, 0, 0]
+		_goalOffset[0] = self.positionStartGoal[0] - _goalPosition[0]
+		_goalOffset[1] = self.positionStartGoal[1] - _goalPosition[1]
+		_goalOffset[2] = self.positionStartGoal[2] - _goalPosition[2]
+
+		# Set particle attributes
+		_particleAttributes = [0, 0, 0]
+		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
+		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
+		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
+		c.setAttr(_particleAttributes[0], self.positionStartParticle[0] - _goalOffset[0])
+		c.setAttr(_particleAttributes[1], self.positionStartParticle[1] - _goalOffset[1])
+		c.setAttr(_particleAttributes[2], self.positionStartParticle[2] - _goalOffset[2])
 
 	### EXECUTION
 	def Start(self, *args):
