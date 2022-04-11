@@ -2,29 +2,27 @@
 # Author Evgeny Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
 # https://github.com/GenEugene/Overlappy
 
-# import sys
-# import os
 import maya.cmds as c
+# import sys, os
 # import maya.mel as mel
 # from datetime import datetime
 # from inspect import currentframe, getframeinfo
-
 # sys.exit()
 
 class OVLP:
-	### WINDOW
+	# WINDOW
 	titleText = "Overlappy v1.0.0"
 	window_name = "OverlappyWindow"
 	windowWidth = 300
 	windowHeight = 24
 
-	### SLIDERS
+	# SLIDERS
 	sliderWidth1 = 60
 	sliderWidth2 = 60
 	sliderWidth3 = 10
 	markerWidth = 6
 
-	### SETTINGS # TODO: move to preset
+	# SETTINGS # TODO: move to preset
 	particleRadius = 25
 	particleConserve = 1
 	particleDrag = 0.01
@@ -33,13 +31,13 @@ class OVLP:
 	goalWeight = 0.5
 	nucleusTimeScale = 1
 
-	### NAMES
+	# NAMES
 	nameMainGroup = "_OverlappyMainGroup_"
 	nameLocGoal = "_locGoal_"
 	nameLocParticle = "_locParticle_"
 	nameParticle = "_particle_"
 
-	### COLORS
+	# COLORS
 	cRed = [1, .5, .5]
 	cOrange = [1, .6, .3]
 	cYellow = [1, 1, .4]
@@ -53,20 +51,20 @@ class OVLP:
 	cBlack = [0, 0, 0]
 
 	def __init__(self):
-		### OBJECTS
+		# OBJECTS
 		self.selected = ""
 		self.locGoal = ""
 		self.locParticle = ""
 		self.particle = ""
 		self.nucleus = ""
 
-		### READONLY
+		# READONLY
 		self.timeCurrent = 0
 		self.timeStart = 0
 		self.timeEnd = 0
 		self.simulated = False
 
-		### UI
+		# UI
 		self.layoutMain = None
 		self.sliderParticleRadius = None
 		self.sliderParticleConserve = None
@@ -96,15 +94,15 @@ class OVLP:
 		ccSelectObjects = self._SelectObjects
 		ccSelectParticle = self._SelectParticle
 		ccSelectNucleus = self._SelectNucleus
-		ccRunLogic = self._RunMainLogic
-		ccScan = self._ScanObjectsFromScene
-		ccCleanup = self._Cleanup
+		ccScanScene = self._ScanObjectsFromScene
 		ccResetValues = self._ValuesReset
 		ccGetValues = self._ValuesGet
+		ccCleanup = self._Cleanup
+		ccRunLogic = self._RunMainLogic
 		c.button(l = "SELECT OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
 		c.button(l = "SELECT PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
 		c.button(l = "SELECT NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
-		c.button(l = "SCAN SCENE", c = ccScan, bgc = OVLP.cBlue)
+		c.button(l = "SCAN SCENE", c = ccScanScene, bgc = OVLP.cBlue)
 		c.button(l = "RESET VALUES", c = ccResetValues, bgc = OVLP.cOrange)
 		c.button(l = "GET VALUES", c = ccGetValues, bgc = OVLP.cOrange)
 		c.button(l = "CLEANUP", c = ccCleanup, bgc = OVLP.cYellow)
@@ -132,25 +130,21 @@ class OVLP:
 				c.menuItem(l = "reset", c = self.ValuesReset)
 				c.menuItem(l = "get value", c = self.ValuesGet)
 				self._marker = c.button(l="", enable=0, w = OVLP.markerWidth, bgc = self.markerColorDefault)
-			
 			def ValuesGet(self, *args):
 				firstName = _OVERLAPPY.selected
 				if (firstName == ""):
 					return
-				
 				if (self._nameAdd):
 					firstName = self._name + firstName
 				else:
 					firstName = self._name
-				
 				# Get attribute
 				try:
 					_value = c.getAttr(firstName + self._attribute)
 					c.floatSliderGrp(self._slider, e=1, v = _value)
 				except:
-					c.warning("Can't get value")
+					print("Can't get value")
 					return
-				
 				# Marker update
 				if (_value != self._value):
 					c.button(self._marker, e=1, bgc = self.markerColorChanged)
@@ -163,23 +157,20 @@ class OVLP:
 					c.button(self._marker, e=1, bgc = self.markerColorChanged)
 				else:
 					c.button(self._marker, e=1, bgc = self.markerColorDefault)
-				
 				# Check selected
 				firstName = _OVERLAPPY.selected
 				if (firstName == ""):
 					return
-				
 				# Add suffix or not
 				if (self._nameAdd):
 					firstName = self._name + firstName
 				else:
 					firstName = self._name
-				
 				# Set attribute
 				try:
 					c.setAttr(firstName + self._attribute, _value)
 				except:
-					c.warning("Can't set value")
+					print("Can't set value")
 			def ValuesReset(self, *args):
 				c.button(self._marker, e=1, bgc = self.markerColorDefault)
 				c.floatSliderGrp(self._slider, e=1, v = self._value)
@@ -188,8 +179,8 @@ class OVLP:
 		layoutSliders = c.frameLayout(l = "SETTINGS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
 		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, 0, 1000, 0, 50, layoutSliders)
 		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, 0, 1, 0, 1, layoutSliders)
-		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, 0, 1000, 0, 2, layoutSliders)
-		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, 0, 1000, 0, 10, layoutSliders)
+		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, 0, 10, 0, 1, layoutSliders)
+		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, 0, 10, 0, 1, layoutSliders)
 		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, 0, 1000, 0, 10, layoutSliders)
 		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, 0, 1, 0, 1, layoutSliders)
 		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders)
@@ -283,8 +274,8 @@ class OVLP:
 		_nucleus = c.ls(type='nucleus')
 		self.nucleus = _nucleus[0]
 		self.sliderNucleusTimeScale._name = self.nucleus # TODO: double set nucleus logic
+		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", OVLP.nucleusTimeScale)
-		c.setAttr(self.nucleus + ".gravity", OVLP.nucleusGravity)
 		c.setAttr(self.nucleus + ".startFrame", self.timeStart)
 		c.setAttr(self.nucleus + ".visibility", 0)
 
@@ -357,35 +348,35 @@ class OVLP:
 		self.sliderNucleusTimeScale.ValuesGet()
 	
 	def _Cleanup(self, *args):
+		_selected = self.selected
 		self.selected = ""
 		self.locGoal = ""
 		self.locParticle = ""
 		self.particle = ""
 		self.nucleus = ""
-		
 		# Revert cached timeslider
 		if (self.simulated):
 			self.simulated = False
 			c.currentTime(self.timeCurrent)
-		
 		# Delete group
 		if (c.objExists(OVLP.nameMainGroup)):
 			c.delete(OVLP.nameMainGroup)
-		
-		# Delete nucleus nodes
+		# Delete nucleus node # TODO checkbox
 		_nucleus = c.ls(type='nucleus')
 		if (len(_nucleus) > 0):
 			c.delete(_nucleus)
-		
-		c.select(cl=1)
-
+		# Select cached objects
+		try:
+			c.select(_selected, r=1) # TODO checkbox
+		except:
+			pass
+		# c.select(cl=1)
 
 	### EXECUTION
 	def Start(self, *args):
 		_OVERLAPPY.CreateUI()
 	def Restart(self, *args):
 		c.evalDeferred("_OVERLAPPY.Start()")
-
 
 _OVERLAPPY = OVLP()
 _OVERLAPPY.Start()
