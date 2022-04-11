@@ -77,6 +77,10 @@ class OVLP:
 		self.sliderGoalSmooth = None
 		self.sliderGoalWeight = None
 		self.sliderNucleusTimeScale = None
+
+		self.sliderOffsetX = None
+		self.sliderOffsetY = None
+		self.sliderOffsetZ = None
 	def CreateUI(self):
 		# WINDOW
 		if c.window(OVLP.window_name, exists = True):
@@ -111,31 +115,35 @@ class OVLP:
 		c.button(l = "RESET VALUES", c = ccResetValues, bgc = OVLP.cOrange)
 		c.button(l = "GET VALUES", c = ccGetValues, bgc = OVLP.cOrange)
 		c.button(l = "CLEANUP", c = ccCleanup, bgc = OVLP.cYellow)
-		c.button(l = "OFFSET UPDATE", c = ccOffsetUpdate, bgc = OVLP.cPurple)
+		c.button(l = "OFFSET UPDATE", c = ccOffsetUpdate, enable=0)
 		c.button(l = "RUN", c = ccRunLogic, bgc = OVLP.cGreen)
 
 		# SLIDERS
 		class classSlider:
-			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, precision=3):
-				self._label = label
+			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="", precision=3):
 				self._attribute = attribute
 				self._name = name
 				self._nameAdd = nameAdd
 				self._value = value
-				self._fmin = fieldMin
-				self._fmax = fieldMax
-				self._min = min
-				self._max = max
 				self._precision = precision
+
 				self.markerColorDefault = OVLP.cGray
 				self.markerColorChanged = OVLP.cBlue
+
+				self.ccCommand = ""
+
+				if (command == ""):
+					self.ccCommand = _OVERLAPPY._ValuesSet
+				else:
+					self.ccCommand = command
+
 				c.flowLayout(p=parent)
-				self._slider = c.floatSliderGrp(l = " " + self._label, v = self._value, cc = _OVERLAPPY._ValuesSet, dc = _OVERLAPPY._ValuesSet, fmn = self._fmin, fmx = self._fmax, min = self._min, max = self._max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth1, OVLP.sliderWidth2, OVLP.sliderWidth3))
+				self._slider = c.floatSliderGrp(l = " " + label, v = self._value, cc = self.ccCommand, dc = self.ccCommand, fmn = fieldMin, fmx = fieldMax, min = min, max = max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth1, OVLP.sliderWidth2, OVLP.sliderWidth3))
 				c.popupMenu(p = self._slider)
-				c.menuItem(l = "reset", c = self.ValuesReset)
-				c.menuItem(l = "get value", c = self.ValuesGet)
+				c.menuItem(l = "reset", c = self.ValueReset)
+				c.menuItem(l = "get value", c = self.ValueGet)
 				self._marker = c.button(l="", enable=0, w = OVLP.markerWidth, bgc = self.markerColorDefault)
-			def ValuesGet(self, *args):
+			def ValueGet(self, *args):
 				firstName = _OVERLAPPY.selected
 				if (firstName == ""):
 					return
@@ -156,7 +164,7 @@ class OVLP:
 					c.button(self._marker, e=1, bgc = self.markerColorChanged)
 				else:
 					c.button(self._marker, e=1, bgc = self.markerColorDefault)
-			def ValuesSet(self, *args):
+			def ValueSet(self, *args):
 				# Marker update
 				_value = c.floatSliderGrp(self._slider, q=1, v=1)
 				if (_value != self._value):
@@ -179,12 +187,15 @@ class OVLP:
 				except:
 					# print("Can't set value")
 					pass
-			def ValuesReset(self, *args):
+			def ValueReset(self, *args):
 				c.button(self._marker, e=1, bgc = self.markerColorDefault)
 				c.floatSliderGrp(self._slider, e=1, v = self._value)
-				_OVERLAPPY._ValuesSet()
+				self.ccCommand()
+			def ValueCheck(self, *args):
+				return c.floatSliderGrp(self._slider, q=1, v=1)
 
 		layoutSliders = c.frameLayout(l = "SETTINGS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
+
 		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, 0, 1000, 0, 100, layoutSliders)
 		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, 0, 1, 0, 1, layoutSliders)
 		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, 0, 10, 0, 1, layoutSliders)
@@ -192,6 +203,11 @@ class OVLP:
 		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, 0, 1000, 0, 10, layoutSliders)
 		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, 0, 1, 0, 1, layoutSliders)
 		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders)
+		
+		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI)
+		self.sliderOffsetX = classSlider("        X", "", "", False, 0, float("inf"), float("inf"), -500, 500, layoutOffset, self._OffsetUpdate)
+		self.sliderOffsetY = classSlider("        Y", "", "", False, 0, float("inf"), float("inf"), -500, 500, layoutOffset, self._OffsetUpdate)
+		self.sliderOffsetZ = classSlider("        Z", "", "", False, 0, float("inf"), float("inf"), -500, 500, layoutOffset, self._OffsetUpdate)
 
 		# RUN WINDOW
 		c.showWindow(OVLP.window_name)
@@ -297,7 +313,8 @@ class OVLP:
 		self.sliderNucleusTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", OVLP.nucleusTimeScale)
-		c.setAttr(self.nucleus + ".startFrame", self.timeStart)
+		c.setAttr(self.nucleus + ".startFrame", float("inf"))
+		# c.setAttr(self.nucleus + ".startFrame", self.timeStart)
 		c.setAttr(self.nucleus + ".visibility", 0)
 
 		# Create locator for particle
@@ -348,28 +365,28 @@ class OVLP:
 			self.sliderNucleusTimeScale._name = self.nucleus # TODO: double set nucleus logic
 
 	def _ValuesSet(self, *args):
-		self.sliderParticleRadius.ValuesSet()
-		self.sliderParticleConserve.ValuesSet()
-		self.sliderParticleDrag.ValuesSet()
-		self.sliderParticleDamp.ValuesSet()
-		self.sliderGoalSmooth.ValuesSet()
-		self.sliderGoalWeight.ValuesSet()
-		self.sliderNucleusTimeScale.ValuesSet()
+		self.sliderParticleRadius.ValueSet()
+		self.sliderParticleConserve.ValueSet()
+		self.sliderParticleDrag.ValueSet()
+		self.sliderParticleDamp.ValueSet()
+		self.sliderGoalSmooth.ValueSet()
+		self.sliderGoalWeight.ValueSet()
+		self.sliderNucleusTimeScale.ValueSet()
 	def _ValuesReset(self, *args):
-		self.sliderParticleConserve.ValuesReset()
-		self.sliderParticleDrag.ValuesReset()
-		self.sliderParticleDamp.ValuesReset()
-		self.sliderGoalSmooth.ValuesReset()
-		self.sliderGoalWeight.ValuesReset()
-		self.sliderNucleusTimeScale.ValuesReset()
+		self.sliderParticleConserve.ValueReset()
+		self.sliderParticleDrag.ValueReset()
+		self.sliderParticleDamp.ValueReset()
+		self.sliderGoalSmooth.ValueReset()
+		self.sliderGoalWeight.ValueReset()
+		self.sliderNucleusTimeScale.ValueReset()
 		self._ValuesSet()
 	def _ValuesGet(self, *args):
-		self.sliderParticleConserve.ValuesGet()
-		self.sliderParticleDrag.ValuesGet()
-		self.sliderParticleDamp.ValuesGet()
-		self.sliderGoalSmooth.ValuesGet()
-		self.sliderGoalWeight.ValuesGet()
-		self.sliderNucleusTimeScale.ValuesGet()
+		self.sliderParticleConserve.ValueGet()
+		self.sliderParticleDrag.ValueGet()
+		self.sliderParticleDamp.ValueGet()
+		self.sliderGoalSmooth.ValueGet()
+		self.sliderGoalWeight.ValueGet()
+		self.sliderNucleusTimeScale.ValueGet()
 	
 	def _Cleanup(self, *args):
 		_selected = self.selected
@@ -399,7 +416,11 @@ class OVLP:
 	def _OffsetUpdate(self, *args):
 		c.currentTime(self.timeStart)
 
-		values = [200, 0, 0]
+		# Get values from sliders
+		values = [0, 0, 0]
+		values[0] = self.sliderOffsetX.ValueCheck()
+		values[1] = self.sliderOffsetY.ValueCheck()
+		values[2] = self.sliderOffsetZ.ValueCheck()
 
 		# Set locGoal constraint offset
 		_goalAttributes = [0, 0, 0]
