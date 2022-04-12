@@ -1,4 +1,4 @@
-# Overlappy v1.0.0 for Maya 2022
+# Overlappy v0.2.0 for Maya 2022
 # Author Evgeny Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
 # https://github.com/GenEugene/Overlappy
 
@@ -11,7 +11,7 @@ import maya.cmds as c
 
 class OVLP:
 	# WINDOW
-	titleText = "Overlappy v1.0.0"
+	titleText = "Overlappy v0.2.0"
 	window_name = "OverlappyWindow"
 	windowWidth = 300
 	windowHeight = 26

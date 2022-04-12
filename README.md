@@ -9,7 +9,7 @@ https://vk.com/geneugene3d
 https://www.artstation.com/geneugene
 
 ---
-## TODO list OLD
+## TASK list OLD
 - gravity options
 - aim position offset
 - deselect shapes from list
@@ -21,8 +21,9 @@ https://www.artstation.com/geneugene
 
 ---
 # Version history
-# v1.0.0 - in progress...
+# v0.2.0 - in progress...
     - [OTHER] refactoring
+	- more notes coming soon...
 
 # v0.1.1
     - [FIX] updated for Maya 2020-2022
