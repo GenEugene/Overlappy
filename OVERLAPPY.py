@@ -21,8 +21,8 @@ class OVLP:
 	replaceSymbol2 = "_R2S_" # for ":"
 
 	# WINDOW
-	windowWidth = 300
-	windowHeight = 26
+	windowWidth = 330
+	windowHeight = 28
 	# SLIDERS
 	sliderWidth1 = 60
 	sliderWidth2 = 60
@@ -109,32 +109,43 @@ class OVLP:
 		c.menu(label = 'Script')
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
 		
-		# BUTTONS SELECT
+		# BUTTONS
 		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.windowHeight), p = frameButtons)
+
+		# SETUP
+		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
+		ccResetSliders = self._ValuesResetAll
+		ccDeleteSetup = self._DeleteSetup
+		ccCreateSetup = self._CreateSetup
+		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
+		c.button(l = "DELETE SETUP", c = ccDeleteSetup, bgc = OVLP.cRed)
+		c.button(l = "CREATE SETUP", c = ccCreateSetup, bgc = OVLP.cGreen)
+		# c.button(l = "", enable=0)
+		
+		# SELECT
+		c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
+		ccScan = self._ScanObjectsFromScene
 		ccSelectObjects = self._SelectObjects
 		ccSelectParticle = self._SelectParticle
 		ccSelectNucleus = self._SelectNucleus
 		ccSelectTarget = self._SelectTarget
 		ccSelectAim = self._SelectAim
+		c.button(l = "SCAN", c = ccScan, bgc = OVLP.cBlue)
 		c.button(l = "OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
 		c.button(l = "PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
 		c.button(l = "NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
 		c.button(l = "TARGET", c = ccSelectTarget, bgc = OVLP.cLBlue)
 		c.button(l = "AIM", c = ccSelectAim, bgc = OVLP.cLBlue)
 
-		# BUTTONS OTHER
-		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
-		ccScanScene = self._ScanObjectsFromScene
-		ccResetValuesAll = self._ValuesResetAll
-		ccCleanup = self._Cleanup
-		ccRunLogic = self._RunMainLogic
-		c.button(l = "SCAN SCENE", c = ccScanScene, bgc = OVLP.cBlue)
-		c.button(l = "", enable=0)
-		c.button(l = "", enable=0)
-		c.button(l = "CLEANUP", c = ccCleanup, bgc = OVLP.cRed)
-		c.button(l = "RESET ALL", c = ccResetValuesAll, bgc = OVLP.cYellow)
-		c.button(l = "RUN", c = ccRunLogic, bgc = OVLP.cGreen)
+		# BAKING
+		# frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
+		c.button(l = "OBJECT", bgc = OVLP.cOrange)
+		c.button(l = "TARGET", bgc = OVLP.cOrange)
+		c.button(l = "AIM", bgc = OVLP.cOrange)
+		c.button(l = "SELECTED", bgc = OVLP.cOrange)
+		c.button(l = "LOCATOR", bgc = OVLP.cOrange)
+		c.button(l = "LAYER", bgc = OVLP.cOrange)
 
 		# SLIDERS
 		class classSlider:
@@ -274,8 +285,8 @@ class OVLP:
 	def _SelectAim(self, *args):
 		self._Select(self.locAim)
 
-	def _RunMainLogic(self, *args):
-		self._Cleanup(False)
+	def _CreateSetup(self, *args):
+		self._DeleteSetup(False)
 		# Get selected objects
 		self.selected = c.ls(sl = 1)
 		if (len(self.selected) == 0):
@@ -494,7 +505,7 @@ class OVLP:
 		self.sliderOffsetZ.ValueReset()
 		self._ValuesSetOffset()
 	
-	def _Cleanup(self, deselect=True, *args):
+	def _DeleteSetup(self, deselect=True, *args):
 		# _selected = self.selected
 		self.selected = ""
 		self.locAim = ""
