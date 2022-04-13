@@ -1,21 +1,28 @@
 # Overlappy v0.2.0 for Maya 2022
-# Author Evgeny Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
+# Author Eugene Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
 # https://github.com/GenEugene/Overlappy
 
 import maya.cmds as c
 # import sys, os
 # import maya.mel as mel
-# from datetime import datetime
-# from inspect import currentframe, getframeinfo
-# sys.exit()
 
 class OVLP:
+	# NAMING
+	textTitle = "Overlappy v0.2.0"
+	nameWindow = "__OverlappyWindow__"
+	#
+	nameGroup = "_OverlappyGroup_"
+	nameLocAim = "_locAim_"
+	nameLocGoal = "_locGoal_"
+	nameLocParticle = "_locParticle_"
+	nameParticle = "_particle_"
+	#
+	replaceSymbol1 = "_R1S_" # for "|"
+	replaceSymbol2 = "_R2S_" # for ":"
+
 	# WINDOW
-	titleText = "Overlappy v0.2.0"
-	window_name = "OverlappyWindow"
 	windowWidth = 300
 	windowHeight = 26
-
 	# SLIDERS
 	sliderWidth1 = 60
 	sliderWidth2 = 60
@@ -30,14 +37,18 @@ class OVLP:
 	goalSmooth = 3
 	goalWeight = 0.5
 	nucleusTimeScale = 1
-
-	# NAMING
-	nameMainGroup = "_OverlappyMainGroup_"
-	nameLocGoal = "_locGoal_"
-	nameLocParticle = "_locParticle_"
-	nameParticle = "_particle_"
-	replaceSymbol1 = "_R1S_" # for "|"
-	replaceSymbol2 = "_R2S_" # for ":"
+	
+	# SLIDERS field min/max, slider min/max
+	rangePRadius = [0, float("inf"), 0, 50]
+	rangePConserve = [0, 1, 0, 1]
+	rangePDrag = [0, 10, 0, 1]
+	rangePDamp = [0, 10, 0, 1]
+	rangeGSmooth = [0, 100, 0, 10]
+	rangeGWeight = [0, 1, 0, 1]
+	rangeNTimeScale = [0.001, 100, 0.001, 4]
+	rangeOffsetX = [float("-inf"), float("inf"), -100, 100]
+	rangeOffsetY = [float("-inf"), float("inf"), -100, 100]
+	rangeOffsetZ = [float("-inf"), float("inf"), -100, 100]
 
 	# COLORS
 	cLRed = [1, .7, .7]
@@ -56,6 +67,7 @@ class OVLP:
 	def __init__(self):
 		# OBJECTS
 		self.selected = ""
+		self.locAim = ""
 		self.locGoal = ""
 		self.locParticle = ""
 		self.particle = ""
@@ -71,23 +83,23 @@ class OVLP:
 
 		# UI
 		self.layoutMain = None
-		self.sliderParticleRadius = None
-		self.sliderParticleConserve = None
-		self.sliderParticleDrag = None
-		self.sliderParticleDamp = None
-		self.sliderGoalSmooth = None
-		self.sliderGoalWeight = None
-		self.sliderNucleusTimeScale = None
+		self.sliderPRadius = None
+		self.sliderPConserve = None
+		self.sliderPDrag = None
+		self.sliderPDamp = None
+		self.sliderGSmooth = None
+		self.sliderGWeight = None
+		self.sliderNTimeScale = None
 
 		self.sliderOffsetX = None
 		self.sliderOffsetY = None
 		self.sliderOffsetZ = None
 	def CreateUI(self):
 		# WINDOW
-		if c.window(OVLP.window_name, exists = True):
-			c.deleteUI(OVLP.window_name)
-		c.window(OVLP.window_name, title = OVLP.titleText, mxb = 0, s = 0)
-		c.window(OVLP.window_name, e = True, rtf = True, wh = (OVLP.windowWidth, OVLP.windowHeight))
+		if c.window(OVLP.nameWindow, exists = True):
+			c.deleteUI(OVLP.nameWindow)
+		c.window(OVLP.nameWindow, title = OVLP.textTitle, mxb = 0, s = 0)
+		c.window(OVLP.nameWindow, e = True, rtf = True, wh = (OVLP.windowWidth, OVLP.windowHeight))
 		self.layoutMain = c.columnLayout(adj = True, h = OVLP.windowHeight)
 
 		# HEAD MENU
@@ -97,19 +109,26 @@ class OVLP:
 		c.menu(label = 'Script')
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
 		
-		# BUTTONS
-		c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight))
+		# BUTTONS SELECT
+		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		c.gridLayout(numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.windowHeight), p = frameButtons)
 		ccSelectObjects = self._SelectObjects
 		ccSelectParticle = self._SelectParticle
 		ccSelectNucleus = self._SelectNucleus
+		ccSelectPLocator = self._SelectPLocator
+		ccSelectAimLoc = self._SelectAimLocator
+		c.button(l = "OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
+		c.button(l = "PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
+		c.button(l = "NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
+		c.button(l = "LOCATOR", c = ccSelectPLocator, bgc = OVLP.cLBlue)
+		c.button(l = "AIM LOC", c = ccSelectAimLoc, bgc = OVLP.cLBlue)
+
+		# BUTTONS OTHER
+		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
 		ccScanScene = self._ScanObjectsFromScene
 		ccResetValuesAll = self._ValuesResetAll
 		ccCleanup = self._Cleanup
 		ccRunLogic = self._RunMainLogic
-		c.button(l = "SELECT OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
-		c.button(l = "SELECT PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
-		c.button(l = "SELECT NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
 		c.button(l = "SCAN SCENE", c = ccScanScene, bgc = OVLP.cBlue)
 		c.button(l = "", enable=0)
 		c.button(l = "", enable=0)
@@ -193,13 +212,13 @@ class OVLP:
 		c.button(l = "RESET", c = ccResetValuesSimulation, bgc = OVLP.cYellow)
 		c.button(l = "GET", c = ccGetValuesSimulation, bgc = OVLP.cGray)
 		c.columnLayout(p = layoutSliders)
-		self.sliderParticleRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, 0, 1000, 0, 100, layoutSliders, self._ValuesSetSimulation)
-		self.sliderParticleConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, 0, 1, 0, 1, layoutSliders, self._ValuesSetSimulation)
-		self.sliderParticleDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, 0, 10, 0, 1, layoutSliders, self._ValuesSetSimulation)
-		self.sliderParticleDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, 0, 10, 0, 1, layoutSliders, self._ValuesSetSimulation)
-		self.sliderGoalSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, 0, 1000, 0, 10, layoutSliders, self._ValuesSetSimulation)
-		self.sliderGoalWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, 0, 1, 0, 1, layoutSliders, self._ValuesSetSimulation)
-		self.sliderNucleusTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, 0.001, 1000, 0.001, 10, layoutSliders, self._ValuesSetSimulation)
+		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], layoutSliders, self._ValuesSetSimulation)
+		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], layoutSliders, self._ValuesSetSimulation)
+		self.sliderPDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, OVLP.rangePDrag[0], OVLP.rangePDrag[1], OVLP.rangePDrag[2], OVLP.rangePDrag[3], layoutSliders, self._ValuesSetSimulation)
+		self.sliderPDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, OVLP.rangePDamp[0], OVLP.rangePDamp[1], OVLP.rangePDamp[2], OVLP.rangePDamp[3], layoutSliders, self._ValuesSetSimulation)
+		self.sliderGSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, OVLP.rangeGSmooth[0], OVLP.rangeGSmooth[1], OVLP.rangeGSmooth[2], OVLP.rangeGSmooth[3], layoutSliders, self._ValuesSetSimulation)
+		self.sliderGWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, OVLP.rangeGWeight[0], OVLP.rangeGWeight[1], OVLP.rangeGWeight[2], OVLP.rangeGWeight[3], layoutSliders, self._ValuesSetSimulation)
+		self.sliderNTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, OVLP.rangeNTimeScale[0], OVLP.rangeNTimeScale[1], OVLP.rangeNTimeScale[2], OVLP.rangeNTimeScale[3], layoutSliders, self._ValuesSetSimulation)
 		
 		# OFFSET SETTINGS
 		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
@@ -207,16 +226,16 @@ class OVLP:
 		ccResetValuesOffset = self._ValuesResetOffset
 		c.button(l = "RESET", c = ccResetValuesOffset, bgc = OVLP.cYellow)
 		c.columnLayout(p = layoutOffset)
-		self.sliderOffsetX = classSlider("        X", "", "", False, 0, float("inf"), float("inf"), -500, 500, layoutOffset, self._OffsetUpdate)
-		self.sliderOffsetY = classSlider("        Y", "", "", False, 0, float("inf"), float("inf"), -500, 500, layoutOffset, self._OffsetUpdate)
-		self.sliderOffsetZ = classSlider("        Z", "", "", False, 0, float("inf"), float("inf"), -500, 500, layoutOffset, self._OffsetUpdate)
+		self.sliderOffsetX = classSlider("        X", "", "", False, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate)
+		self.sliderOffsetY = classSlider("        Y", "", "", False, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate)
+		self.sliderOffsetZ = classSlider("        Z", "", "", False, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate)
 
 		# RUN WINDOW
-		c.showWindow(OVLP.window_name)
+		c.showWindow(OVLP.nameWindow)
 		self.Resize_UI()
 
 	def Resize_UI(self, *args):
-		c.window(OVLP.window_name, e = True, h = OVLP.windowHeight, rtf = True)
+		c.window(OVLP.nameWindow, e = True, h = OVLP.windowHeight, rtf = True)
 	def SceneReload(self, *args):
 		currentScene = c.file(q = True, sceneName = True)
 		if(currentScene):
@@ -250,8 +269,13 @@ class OVLP:
 		self._Select(self.particle)
 	def _SelectNucleus(self, *args):
 		self._Select(self.nucleus)
+	def _SelectPLocator(self, *args):
+		self._Select(self.locParticle[0])
+	def _SelectAimLocator(self, *args):
+		self._Select(self.locAim[0])
 
 	def _RunMainLogic(self, *args):
+		self._Cleanup(False)
 		# Get selected objects
 		self.selected = c.ls(sl = 1)
 		if (len(self.selected) == 0):
@@ -269,26 +293,28 @@ class OVLP:
 
 		# Create group
 		c.select(cl=1)
-		if (c.objExists(OVLP.nameMainGroup)):
-			c.delete(OVLP.nameMainGroup)
-		c.group(em=1, n = OVLP.nameMainGroup)
+		if (c.objExists(OVLP.nameGroup)):
+			c.delete(OVLP.nameGroup)
+		c.group(em=1, n = OVLP.nameGroup)
 
 		# Run setup logic
 		self._CreateSetup(self.selected)
-		self._ValuesResetAll()
+		# self._ValuesResetAll()
+		self._OffsetUpdate()
 		
 		c.select(self.selected, r = 1)
 		self.simulated = True
 	def _CreateSetup(self, objCurrent, *args):
 		# Names
 		_objConverted = self.ConvertText(objCurrent)
-		locGoalName = OVLP.nameLocGoal + _objConverted
-		locParticleName = OVLP.nameLocParticle + _objConverted
-		particleName = OVLP.nameParticle + _objConverted
+		nameLocAim = OVLP.nameLocAim + _objConverted
+		nameLocGoal = OVLP.nameLocGoal + _objConverted
+		nameLocParticle = OVLP.nameLocParticle + _objConverted
+		nameParticle = OVLP.nameParticle + _objConverted
 
 		# Create locator for goal
-		self.locGoal = c.spaceLocator(n = locGoalName)
-		c.parent(self.locGoal, OVLP.nameMainGroup)
+		self.locGoal = c.spaceLocator(n = nameLocGoal)
+		c.parent(self.locGoal, OVLP.nameGroup)
 		c.matchTransform(self.locGoal, objCurrent, pos = True, rot = True)
 		c.parentConstraint(objCurrent, self.locGoal, maintainOffset=1)
 		c.setAttr(self.locGoal[0] + ".visibility", 0)
@@ -296,9 +322,9 @@ class OVLP:
 
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
-		self.particle = c.nParticle(n = particleName, position = _position, conserve = 1)[0]
+		self.particle = c.nParticle(n = nameParticle, position = _position, conserve = 1)[0]
 		c.goal(useTransformAsGoal = 1, goal = self.locGoal)
-		c.parent(self.particle, OVLP.nameMainGroup)
+		c.parent(self.particle, OVLP.nameGroup)
 		self.positionStartParticle = c.xform(self.particle, q=1, t=1)
 
 		# Set simulation attributes
@@ -310,40 +336,60 @@ class OVLP:
 		c.setAttr(self.particle + "Shape.goalSmoothness", OVLP.goalSmooth)
 		c.setAttr(self.particle + "Shape.goalWeight[0]", OVLP.goalWeight)
 
-		# Nucleus
+		# Nucleus detection
 		_nucleus = c.ls(type='nucleus')
 		self.nucleus = _nucleus[0]
-		self.sliderNucleusTimeScale._name = self.nucleus # TODO: double set nucleus logic
+		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", OVLP.nucleusTimeScale)
 		c.setAttr(self.nucleus + ".startFrame", float("inf"))
 		c.setAttr(self.nucleus + ".visibility", 0)
 
-		# Create locator for particle
-		self.locParticle = c.spaceLocator(n = locParticleName)
-		c.parent(self.locParticle, OVLP.nameMainGroup)
+		# Create and connect locator to particle
+		self.locParticle = c.spaceLocator(n = nameLocParticle)
+		c.parent(self.locParticle, OVLP.nameGroup)
 		c.matchTransform(self.locParticle, objCurrent, pos = True, rot = True)
 		c.connectAttr(self.particle + ".center", self.locParticle[0] + ".translate", f = True)
 		c.setAttr(self.locParticle[0] + ".visibility", 0)
 
+		# Create base aim locator
+		_locAimBase = c.spaceLocator(n = "Base" + nameLocAim)
+		c.parent(_locAimBase, OVLP.nameGroup)
+		c.matchTransform(_locAimBase, objCurrent, position = True, rotation = True)
+		c.parentConstraint(objCurrent, _locAimBase, maintainOffset=1)
+
+		# Create aim locator
+		self.locAim = c.spaceLocator(n = nameLocAim)
+		c.matchTransform(self.locAim, _locAimBase, pos = True, rot = True)
+		c.parent(self.locAim, _locAimBase)
+		c.aimConstraint(self.locParticle, self.locAim, weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "object", worldUpVector = (0, 0, 1), skip = "y")
+		# c.aimConstraint(self.locParticle, self.locAim, weight = 1, aimVector = (1, 0, 0), upVector = (1, 0, 0), worldUpType = "object", worldUpVector = (0, 0, 1), skip = "y")
+		# c.aimConstraint(self.locParticle, self.locAim, weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1), skip = "y")
+		# c.setAttr(self.locAim[0] + ".visibility", 0)
+		c.setAttr(self.locAim[0] + "Shape.localScaleX", 60)
+		c.setAttr(self.locAim[0] + "Shape.localScaleY", 60)
+		c.setAttr(self.locAim[0] + "Shape.localScaleZ", 60)
+
 	def _ScanObjectsFromScene(self, *args):
 		# Check overlappy group
-		if (not c.objExists(OVLP.nameMainGroup)):
+		if (not c.objExists(OVLP.nameGroup)):
 			c.warning("Overlappy object doesn't exists")
 			return
 		# Get children of group
-		children = c.listRelatives(OVLP.nameMainGroup)
+		children = c.listRelatives(OVLP.nameGroup)
 		if (len(children) == 0):
 			c.warning("Overlappy object has no children objects")
 			return
 		# Try to get suffix name
 		objectName = ""
 		for item in children:
-			splitNames = item.split(OVLP.nameLocGoal)
+			splitNames = item.split(OVLP.nameLocAim)
 			if (len(splitNames) < 2):
-				splitNames = item.split(OVLP.nameLocParticle)
+				splitNames = item.split(OVLP.nameLocGoal)
 				if (len(splitNames) < 2):
-					splitNames = item.split(OVLP.nameParticle)
+					splitNames = item.split(OVLP.nameLocParticle)
+					if (len(splitNames) < 2):
+						splitNames = item.split(OVLP.nameParticle)
 			lastName = splitNames[-1]
 			if (objectName == ""):
 				objectName = lastName
@@ -355,6 +401,8 @@ class OVLP:
 		_converted = self.ConvertText(objectName, False)
 		if (c.objExists(_converted)):
 			self.selected = _converted
+		if (c.objExists(OVLP.nameLocAim + objectName)):
+			self.locAim = OVLP.nameLocAim + objectName
 		if (c.objExists(OVLP.nameLocGoal + objectName)):
 			self.locGoal = OVLP.nameLocGoal + objectName
 		if (c.objExists(OVLP.nameLocParticle + objectName)):
@@ -364,40 +412,40 @@ class OVLP:
 		_nucleus = c.ls(type='nucleus')
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
-			self.sliderNucleusTimeScale._name = self.nucleus # TODO: double set nucleus logic
+			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 
 	def _ValuesSetSimulation(self, *args):
-		self.sliderParticleRadius.ValueSet()
-		self.sliderParticleConserve.ValueSet()
-		self.sliderParticleDrag.ValueSet()
-		self.sliderParticleDamp.ValueSet()
-		self.sliderGoalSmooth.ValueSet()
-		self.sliderGoalWeight.ValueSet()
-		self.sliderNucleusTimeScale.ValueSet()
+		self.sliderPRadius.ValueSet()
+		self.sliderPConserve.ValueSet()
+		self.sliderPDrag.ValueSet()
+		self.sliderPDamp.ValueSet()
+		self.sliderGSmooth.ValueSet()
+		self.sliderGWeight.ValueSet()
+		self.sliderNTimeScale.ValueSet()
 	def _ValuesSetOffset(self, *args):
 		self.sliderOffsetX.ValueSet()
 		self.sliderOffsetY.ValueSet()
 		self.sliderOffsetZ.ValueSet()
 	
 	def _ValuesGetSimulation(self, *args):
-		self.sliderParticleConserve.ValueGet()
-		self.sliderParticleDrag.ValueGet()
-		self.sliderParticleDamp.ValueGet()
-		self.sliderGoalSmooth.ValueGet()
-		self.sliderGoalWeight.ValueGet()
-		self.sliderNucleusTimeScale.ValueGet()
+		self.sliderPConserve.ValueGet()
+		self.sliderPDrag.ValueGet()
+		self.sliderPDamp.ValueGet()
+		self.sliderGSmooth.ValueGet()
+		self.sliderGWeight.ValueGet()
+		self.sliderNTimeScale.ValueGet()
 	
 	def _ValuesResetAll(self, *args):
-		self.sliderParticleRadius.ValueReset()
+		self.sliderPRadius.ValueReset()
 		self._ValuesResetSimulation()
 		self._ValuesResetOffset()
 	def _ValuesResetSimulation(self, *args):
-		self.sliderParticleConserve.ValueReset()
-		self.sliderParticleDrag.ValueReset()
-		self.sliderParticleDamp.ValueReset()
-		self.sliderGoalSmooth.ValueReset()
-		self.sliderGoalWeight.ValueReset()
-		self.sliderNucleusTimeScale.ValueReset()
+		self.sliderPConserve.ValueReset()
+		self.sliderPDrag.ValueReset()
+		self.sliderPDamp.ValueReset()
+		self.sliderGSmooth.ValueReset()
+		self.sliderGWeight.ValueReset()
+		self.sliderNTimeScale.ValueReset()
 		self._ValuesSetSimulation()
 	def _ValuesResetOffset(self, *args):
 		self.sliderOffsetX.ValueReset()
@@ -405,30 +453,32 @@ class OVLP:
 		self.sliderOffsetZ.ValueReset()
 		self._ValuesSetOffset()
 	
-	def _Cleanup(self, *args):
-		_selected = self.selected
+	def _Cleanup(self, deselect=True, *args):
+		# _selected = self.selected
 		self.selected = ""
+		self.locAim = ""
 		self.locGoal = ""
 		self.locParticle = ""
 		self.particle = ""
 		self.nucleus = ""
 		# Revert cached timeslider
-		if (self.simulated):
-			self.simulated = False
-			c.currentTime(self.timeCurrent)
+		# if (self.simulated):
+		# 	self.simulated = False
+		# 	c.currentTime(self.timeCurrent)
 		# Delete group
-		if (c.objExists(OVLP.nameMainGroup)):
-			c.delete(OVLP.nameMainGroup)
+		if (c.objExists(OVLP.nameGroup)):
+			c.delete(OVLP.nameGroup)
 		# Delete nucleus node # TODO checkbox
 		_nucleus = c.ls(type='nucleus')
 		if (len(_nucleus) > 0):
 			c.delete(_nucleus)
 		# Select cached objects
-		try:
-			c.select(_selected, r=1) # TODO checkbox
-		except:
-			pass
-		# c.select(cl=1)
+		# try:
+		# 	c.select(_selected, r=1) # TODO checkbox
+		# except:
+		# 	pass
+		if (deselect):
+			c.select(cl=1)
 
 	def _OffsetUpdate(self, *args):
 		self._ValuesSetOffset()
