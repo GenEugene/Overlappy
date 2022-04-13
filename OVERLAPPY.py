@@ -116,10 +116,10 @@ class OVLP:
 		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
 		ccResetSliders = self._ValuesResetAll
 		ccDeleteSetup = self._DeleteSetup
-		ccCreateSetup = self._CreateSetup
+		ccInitSetup = self._InitSetup
 		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
 		c.button(l = "DELETE SETUP", c = ccDeleteSetup, bgc = OVLP.cRed)
-		c.button(l = "CREATE SETUP", c = ccCreateSetup, bgc = OVLP.cGreen)
+		c.button(l = "CREATE SETUP", c = ccInitSetup, bgc = OVLP.cGreen)
 		# c.button(l = "", enable=0)
 		
 		# SELECT
@@ -254,7 +254,6 @@ class OVLP:
 		else:
 			c.file(new = 1, f = 1)
 
-	### LOGIC
 	def ConvertText(self, text, direction=True, *args):
 		if (direction):
 			_text = text.replace("|", OVLP.replaceSymbol1)
@@ -264,28 +263,9 @@ class OVLP:
 			_text = text.replace(OVLP.replaceSymbol1, "|")
 			_text = _text.replace(OVLP.replaceSymbol2, ":")
 			return _text
-	
-	def _Select(self, name="", *args):
-		if (name != ""):
-			if (c.objExists(name)):
-				c.select(name, r=1)
-			else: c.warning("'{0}' object doesn't exists".format(name))
-		else: c.warning("Can't select 'None'")
-	def _SelectObjects(self, *args):
-		if (self.selected == ""):
-			self._Select()
-		else:
-			self._Select(self.selected)
-	def _SelectParticle(self, *args):
-		self._Select(self.particle)
-	def _SelectNucleus(self, *args):
-		self._Select(self.nucleus)
-	def _SelectTarget(self, *args):
-		self._Select(self.locTarget)
-	def _SelectAim(self, *args):
-		self._Select(self.locAim)
 
-	def _CreateSetup(self, *args):
+	### LOGIC
+	def _InitSetup(self, *args):
 		self._DeleteSetup(False)
 		# Get selected objects
 		self.selected = c.ls(sl = 1)
@@ -383,44 +363,32 @@ class OVLP:
 		c.setAttr(self.locAim + "Shape.localScaleX", 50)#
 		c.setAttr(self.locAim + "Shape.localScaleY", 50)#
 		c.setAttr(self.locAim + "Shape.localScaleZ", 50)#
-
-	def _OffsetUpdate(self, *args):
-		self._ValuesSetOffset()
-		if (self.selected == ""):
-			return
-		c.currentTime(self.timeStart)
-		# Get values from sliders
-		values = [0, 0, 0]
-		values[0] = self.sliderOffsetX.ValueCheck()
-		values[1] = self.sliderOffsetY.ValueCheck()
-		values[2] = self.sliderOffsetZ.ValueCheck()
-		# Set locGoal constraint offset
-		_goalAttributes = [0, 0, 0]
-		_goalAttributes[0] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateX"
-		_goalAttributes[1] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateY"
-		_goalAttributes[2] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateZ"
-		c.setAttr(_goalAttributes[0], values[0])
-		c.setAttr(_goalAttributes[1], values[1])
-		c.setAttr(_goalAttributes[2], values[2])
-		# Get offset
-		_goalPosition = c.xform(self.locGoal, q=1, t=1)
-		_goalOffset = [0, 0, 0]
-		_goalOffset[0] = self.positionStartGoal[0] - _goalPosition[0]
-		_goalOffset[1] = self.positionStartGoal[1] - _goalPosition[1]
-		_goalOffset[2] = self.positionStartGoal[2] - _goalPosition[2]
-		# Set particle attributes
-		_particleAttributes = [0, 0, 0]
-		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
-		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
-		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
-		c.setAttr(_particleAttributes[0], self.positionStartParticle[0] - _goalOffset[0])
-		c.setAttr(_particleAttributes[1], self.positionStartParticle[1] - _goalOffset[1])
-		c.setAttr(_particleAttributes[2], self.positionStartParticle[2] - _goalOffset[2])
-		# Reconstrain aim locator to hidden aim
-		c.setAttr(self.locAim + ".rotateX", 0)
-		c.setAttr(self.locAim + ".rotateY", 0)
-		c.setAttr(self.locAim + ".rotateZ", 0)
-		c.orientConstraint(self.locAimHidden, self.locAim, maintainOffset = True)
+	def _DeleteSetup(self, deselect=True, *args):
+		# _selected = self.selected
+		self.selected = ""
+		self.locAim = ""
+		self.locGoal = ""
+		self.locTarget = ""
+		self.particle = ""
+		self.nucleus = ""
+		# Revert cached timeslider
+		# if (self.simulated):
+		# 	self.simulated = False
+		# 	c.currentTime(self.timeCurrent)
+		# Delete group
+		if (c.objExists(OVLP.nameGroup)):
+			c.delete(OVLP.nameGroup)
+		# Delete nucleus node # TODO checkbox
+		_nucleus = c.ls(type='nucleus')
+		if (len(_nucleus) > 0):
+			c.delete(_nucleus)
+		# Select cached objects
+		# try:
+		# 	c.select(_selected, r=1) # TODO checkbox
+		# except:
+		# 	pass
+		if (deselect):
+			c.select(cl=1)
 
 	def _ScanObjectsFromScene(self, *args):
 		# Check overlappy group
@@ -466,6 +434,26 @@ class OVLP:
 			self.nucleus = _nucleus[0]
 			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 
+	def _Select(self, name="", *args):
+		if (name != ""):
+			if (c.objExists(name)):
+				c.select(name, r=1)
+			else: c.warning("'{0}' object doesn't exists".format(name))
+		else: c.warning("Can't select 'None'")
+	def _SelectObjects(self, *args):
+		if (self.selected == ""):
+			self._Select()
+		else:
+			self._Select(self.selected)
+	def _SelectParticle(self, *args):
+		self._Select(self.particle)
+	def _SelectNucleus(self, *args):
+		self._Select(self.nucleus)
+	def _SelectTarget(self, *args):
+		self._Select(self.locTarget)
+	def _SelectAim(self, *args):
+		self._Select(self.locAim)
+
 	def _ValuesSetSimulation(self, *args):
 		self.sliderPRadius.ValueSet()
 		self.sliderPConserve.ValueSet()
@@ -505,32 +493,43 @@ class OVLP:
 		self.sliderOffsetZ.ValueReset()
 		self._ValuesSetOffset()
 	
-	def _DeleteSetup(self, deselect=True, *args):
-		# _selected = self.selected
-		self.selected = ""
-		self.locAim = ""
-		self.locGoal = ""
-		self.locTarget = ""
-		self.particle = ""
-		self.nucleus = ""
-		# Revert cached timeslider
-		# if (self.simulated):
-		# 	self.simulated = False
-		# 	c.currentTime(self.timeCurrent)
-		# Delete group
-		if (c.objExists(OVLP.nameGroup)):
-			c.delete(OVLP.nameGroup)
-		# Delete nucleus node # TODO checkbox
-		_nucleus = c.ls(type='nucleus')
-		if (len(_nucleus) > 0):
-			c.delete(_nucleus)
-		# Select cached objects
-		# try:
-		# 	c.select(_selected, r=1) # TODO checkbox
-		# except:
-		# 	pass
-		if (deselect):
-			c.select(cl=1)
+	def _OffsetUpdate(self, *args):
+		self._ValuesSetOffset()
+		if (self.selected == ""):
+			return
+		c.currentTime(self.timeStart)
+		# Get values from sliders
+		values = [0, 0, 0]
+		values[0] = self.sliderOffsetX.ValueCheck()
+		values[1] = self.sliderOffsetY.ValueCheck()
+		values[2] = self.sliderOffsetZ.ValueCheck()
+		# Set locGoal constraint offset
+		_goalAttributes = [0, 0, 0]
+		_goalAttributes[0] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateX"
+		_goalAttributes[1] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateY"
+		_goalAttributes[2] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateZ"
+		c.setAttr(_goalAttributes[0], values[0])
+		c.setAttr(_goalAttributes[1], values[1])
+		c.setAttr(_goalAttributes[2], values[2])
+		# Get offset
+		_goalPosition = c.xform(self.locGoal, q=1, t=1)
+		_goalOffset = [0, 0, 0]
+		_goalOffset[0] = self.positionStartGoal[0] - _goalPosition[0]
+		_goalOffset[1] = self.positionStartGoal[1] - _goalPosition[1]
+		_goalOffset[2] = self.positionStartGoal[2] - _goalPosition[2]
+		# Set particle attributes
+		_particleAttributes = [0, 0, 0]
+		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
+		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
+		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
+		c.setAttr(_particleAttributes[0], self.positionStartParticle[0] - _goalOffset[0])
+		c.setAttr(_particleAttributes[1], self.positionStartParticle[1] - _goalOffset[1])
+		c.setAttr(_particleAttributes[2], self.positionStartParticle[2] - _goalOffset[2])
+		# Reconstrain aim locator to hidden aim
+		c.setAttr(self.locAim + ".rotateX", 0)
+		c.setAttr(self.locAim + ".rotateY", 0)
+		c.setAttr(self.locAim + ".rotateZ", 0)
+		c.orientConstraint(self.locAimHidden, self.locAim, maintainOffset = True)
 
 	### EXECUTION
 	def Start(self, *args):
