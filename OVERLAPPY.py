@@ -12,11 +12,18 @@ class OVLP:
 	nameWindow = "__OverlappyWindow__"
 	#
 	nameGroup = "_OverlappyGroup_"
+
 	nameLocGoal = "_locGoal_"
 	nameLocTarget = "_locTarget_"
+	nameLocTarget2 = ["_locGoal_", "_locTarget_"] # TODO replace
+
 	nameLocAim = "_locAim_"
+	nameLocAim2 = ["_locAimBase_", "_locAimHidden_", "_locAim_"] # TODO replace
+
 	nameParticle = "_particle_"
+
 	nameLoft = "_loft_"
+	nameLoft2 = ["_loftStart_", "_loftEnd_", "_loftBody_"] # TODO replace
 	#
 	replaceSymbol1 = "_R1S_" # for "|"
 	replaceSymbol2 = "_R2S_" # for ":"
@@ -28,6 +35,7 @@ class OVLP:
 	sliderWidth1 = 60
 	sliderWidth2 = 60
 	sliderWidth3 = 10
+	sliderWidth = [60, 60, 10] # TODO replace
 	markerWidth = 6
 
 	# SETTINGS # TODO: move to preset
@@ -68,20 +76,29 @@ class OVLP:
 	def __init__(self):
 		# OBJECTS
 		self.selected = ""
+
 		self.locGoal = ""
 		self.locTarget = ""
+		self.locAim2 = ["", ""] # TODO replace
+
 		self.locAimHidden = ""
 		self.locAim = ""
+		self.locAim2 = ["", "", ""] # TODO replace
+
 		self.particle = ""
 		self.nucleus = ""
+
 		self.loft = ""
+		self.loft2 = ["", "", ""] # TODO replace
 
 		# READONLY
 		self.positionStartGoal = None
 		self.positionStartParticle = None
+
 		# self.timeCurrent = 0
 		self.timeStart = 0
 		self.timeEnd = 0
+		self.time = [0, 0] # TODO replace
 
 		# UI
 		self.layoutMain = None
@@ -338,11 +355,11 @@ class OVLP:
 
 		# Nucleus detection
 		self.nucleus = c.ls(type='nucleus')[0]
-		c.parent(self.nucleus, OVLP.nameGroup)
+		# c.parent(self.nucleus, OVLP.nameGroup)
 		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
-		c.setAttr(self.nucleus + ".startFrame", float("inf"))
+		c.setAttr(self.nucleus + ".startFrame", self.timeStart) # TODO
 		c.setAttr(self.nucleus + ".visibility", 0)
 
 		# Create and connect locator to particle
