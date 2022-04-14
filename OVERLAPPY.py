@@ -463,7 +463,54 @@ class OVLP:
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
 			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
+	def _OffsetUpdate(self, *args):
+		# Check cached value
+		checkX = self.sliderOffsetX.ValueCachedGet() != self.sliderOffsetX.ValueCheck()
+		checkY = self.sliderOffsetY.ValueCachedGet() != self.sliderOffsetY.ValueCheck()
+		checkZ = self.sliderOffsetZ.ValueCachedGet() != self.sliderOffsetZ.ValueCheck()
+		if (checkX or checkY or checkZ):
+			self.sliderOffsetX.ValueCachedSet()
+			self.sliderOffsetY.ValueCachedSet()
+			self.sliderOffsetZ.ValueCachedSet()
+		else: return
 
+		self._ValuesSetOffset()
+		if (self.selected == ""): return
+		c.currentTime(self.time[0])
+		# Get values from sliders
+		values = [0, 0, 0]
+		values[0] = self.sliderOffsetX.ValueCheck()
+		values[1] = self.sliderOffsetY.ValueCheck()
+		values[2] = self.sliderOffsetZ.ValueCheck()
+		# Set locGoal constraint offset
+		_goalAttributes = [0, 0, 0]
+		_goalAttributes[0] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
+		_goalAttributes[1] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateY"
+		_goalAttributes[2] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateZ"
+		c.setAttr(_goalAttributes[0], values[0])
+		c.setAttr(_goalAttributes[1], values[1])
+		c.setAttr(_goalAttributes[2], values[2])
+		# Get offset
+		_goalPosition = c.xform(self.locGoalTarget[0], q=1, t=1)
+		_goalOffset = [0, 0, 0]
+		_goalOffset[0] = self.startPositionGoalParticle[0][0] - _goalPosition[0]
+		_goalOffset[1] = self.startPositionGoalParticle[0][1] - _goalPosition[1]
+		_goalOffset[2] = self.startPositionGoalParticle[0][2] - _goalPosition[2]
+		# Set particle attributes
+		_particleAttributes = [0, 0, 0]
+		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
+		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
+		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
+		c.setAttr(_particleAttributes[0], self.startPositionGoalParticle[1][0] - _goalOffset[0])
+		c.setAttr(_particleAttributes[1], self.startPositionGoalParticle[1][1] - _goalOffset[1])
+		c.setAttr(_particleAttributes[2], self.startPositionGoalParticle[1][2] - _goalOffset[2])
+		# Reconstrain aim locator to hidden aim
+		c.setAttr(self.locAim[2] + ".rotateX", 0)
+		c.setAttr(self.locAim[2] + ".rotateY", 0)
+		c.setAttr(self.locAim[2] + ".rotateZ", 0)
+		c.orientConstraint(self.locAim[1], self.locAim[2], maintainOffset = True)
+
+	### SELECT
 	def _Select(self, name="", *args):
 		if (name != ""):
 			if (c.objExists(name)):
@@ -484,6 +531,7 @@ class OVLP:
 	def _SelectAim(self, *args):
 		self._Select(self.locAim[2])
 
+	### VALUES
 	def _ValuesSetSimulation(self, *args):
 		self.sliderPRadius.ValueSet()
 		self.sliderPConserve.ValueSet()
@@ -540,53 +588,7 @@ class OVLP:
 		self.sliderOffsetZ.ValueReset()
 		self._ValuesSetOffset()
 	
-	def _OffsetUpdate(self, *args):
-		# Check cached value
-		checkX = self.sliderOffsetX.ValueCachedGet() != self.sliderOffsetX.ValueCheck()
-		checkY = self.sliderOffsetY.ValueCachedGet() != self.sliderOffsetY.ValueCheck()
-		checkZ = self.sliderOffsetZ.ValueCachedGet() != self.sliderOffsetZ.ValueCheck()
-		if (checkX or checkY or checkZ):
-			self.sliderOffsetX.ValueCachedSet()
-			self.sliderOffsetY.ValueCachedSet()
-			self.sliderOffsetZ.ValueCachedSet()
-		else: return
-
-		self._ValuesSetOffset()
-		if (self.selected == ""): return
-		c.currentTime(self.time[0])
-		# Get values from sliders
-		values = [0, 0, 0]
-		values[0] = self.sliderOffsetX.ValueCheck()
-		values[1] = self.sliderOffsetY.ValueCheck()
-		values[2] = self.sliderOffsetZ.ValueCheck()
-		# Set locGoal constraint offset
-		_goalAttributes = [0, 0, 0]
-		_goalAttributes[0] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
-		_goalAttributes[1] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateY"
-		_goalAttributes[2] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateZ"
-		c.setAttr(_goalAttributes[0], values[0])
-		c.setAttr(_goalAttributes[1], values[1])
-		c.setAttr(_goalAttributes[2], values[2])
-		# Get offset
-		_goalPosition = c.xform(self.locGoalTarget[0], q=1, t=1)
-		_goalOffset = [0, 0, 0]
-		_goalOffset[0] = self.startPositionGoalParticle[0][0] - _goalPosition[0]
-		_goalOffset[1] = self.startPositionGoalParticle[0][1] - _goalPosition[1]
-		_goalOffset[2] = self.startPositionGoalParticle[0][2] - _goalPosition[2]
-		# Set particle attributes
-		_particleAttributes = [0, 0, 0]
-		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
-		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
-		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
-		c.setAttr(_particleAttributes[0], self.startPositionGoalParticle[1][0] - _goalOffset[0])
-		c.setAttr(_particleAttributes[1], self.startPositionGoalParticle[1][1] - _goalOffset[1])
-		c.setAttr(_particleAttributes[2], self.startPositionGoalParticle[1][2] - _goalOffset[2])
-		# Reconstrain aim locator to hidden aim
-		c.setAttr(self.locAim[2] + ".rotateX", 0)
-		c.setAttr(self.locAim[2] + ".rotateY", 0)
-		c.setAttr(self.locAim[2] + ".rotateZ", 0)
-		c.orientConstraint(self.locAim[1], self.locAim[2], maintainOffset = True)
-
+	### OTHER
 	def _TestFunction(self, *args):
 		print("Test Function")
 	
