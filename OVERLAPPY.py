@@ -10,33 +10,19 @@ class OVLP:
 	# NAMING
 	textTitle = "Overlappy v0.2.0"
 	nameWindow = "__OverlappyWindow__"
-	#
 	nameGroup = "_OverlappyGroup_"
-
-	nameLocGoal = "_locGoal_"
-	nameLocTarget = "_locTarget_"
-	nameLocTarget2 = ["_locGoal_", "_locTarget_"] # TODO replace
-
-	nameLocAim = "_locAim_"
-	nameLocAim2 = ["_locAimBase_", "_locAimHidden_", "_locAim_"] # TODO replace
-
+	nameLocGoalTarget = ("_locGoal_", "_locTarget_")
+	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_")
 	nameParticle = "_particle_"
-
-	nameLoft = "_loft_"
-	nameLoft2 = ["_loftStart_", "_loftEnd_", "_loftBody_"] # TODO replace
-	#
-	replaceSymbol1 = "_R1S_" # for "|"
-	replaceSymbol2 = "_R2S_" # for ":"
+	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
+	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 
 	# WINDOW
 	windowWidth = 330
 	windowHeight = 28
-	# SLIDERS
-	sliderWidth1 = 60
-	sliderWidth2 = 60
-	sliderWidth3 = 10
-	sliderWidth = [60, 60, 10] # TODO replace
+	sliderWidth = (60, 60, 10)
 	markerWidth = 6
+	loftFactor = 0.9
 
 	# SETTINGS # TODO: move to preset
 	particleRadius = 20
@@ -48,58 +34,43 @@ class OVLP:
 	nucleusTimeScale = 1
 	
 	# SLIDERS field min/max, slider min/max
-	rangePRadius = [0, float("inf"), 0, 40]
-	rangePConserve = [0, 1, 0, 1]
-	rangePDrag = [0, 10, 0, 1]
-	rangePDamp = [0, 10, 0, 1]
-	rangeGSmooth = [0, 100, 0, 10]
-	rangeGWeight = [0, 1, 0, 1]
-	rangeNTimeScale = [0.001, 100, 0.001, 4]
-	rangeOffsetX = [float("-inf"), float("inf"), -100, 100]
-	rangeOffsetY = [float("-inf"), float("inf"), -100, 100]
-	rangeOffsetZ = [float("-inf"), float("inf"), -100, 100]
+	rangePRadius = (0, float("inf"), 0, 40)
+	rangePConserve = (0, 1, 0, 1)
+	rangePDrag = (0, 10, 0, 1)
+	rangePDamp = (0, 10, 0, 1)
+	rangeGSmooth = (0, 100, 0, 10)
+	rangeGWeight = (0, 1, 0, 1)
+	rangeNTimeScale = (0.001, 100, 0.001, 4)
+	rangeOffsetX = (float("-inf"), float("inf"), -100, 100)
+	rangeOffsetY = (float("-inf"), float("inf"), -100, 100)
+	rangeOffsetZ = (float("-inf"), float("inf"), -100, 100)
 
 	# COLORS
-	cLRed = [1, .7, .7]
-	cRed = [1, .5, .5]
-	cOrange = [1, .6, .3]
-	cYellow = [1, 1, .5]
-	cGreen = [.6, 1, .6]
-	cLBlue = [.5, .9, 1]
-	cBlue = [.3, .7, 1]
-	cPurple = [.81, .4, 1]
-	cWhite = [1, 1, 1]
-	cGray = [.5, .5, .5]
-	cDarkGray = [.3, .3, .3]
-	cBlack = [.15, .15, .15]
+	cLRed = (1, .7, .7)
+	cRed = (1, .5, .5)
+	cOrange = (1, .6, .3)
+	cYellow = (1, 1, .5)
+	cGreen = (.6, 1, .6)
+	cLBlue = (.5, .9, 1)
+	cBlue = (.3, .7, 1)
+	cPurple = (.81, .4, 1)
+	cWhite = (1, 1, 1)
+	cGray = (.5, .5, .5)
+	cDarkGray = (.3, .3, .3)
+	cBlack = (.15, .15, .15)
 
 	def __init__(self):
 		# OBJECTS
 		self.selected = ""
-
-		self.locGoal = ""
-		self.locTarget = ""
-		self.locAim2 = ["", ""] # TODO replace
-
-		self.locAimHidden = ""
-		self.locAim = ""
-		self.locAim2 = ["", "", ""] # TODO replace
-
+		self.locGoalTarget = ["", ""]
+		self.locAim = ["", "", ""]
 		self.particle = ""
 		self.nucleus = ""
-
-		self.loft = ""
-		self.loft2 = ["", "", ""] # TODO replace
-
+		self.loft = ["", "", ""]
 		# READONLY
-		self.positionStartGoal = None
-		self.positionStartParticle = None
-
+		self.startPositionGoalParticle = [None, None]
 		# self.timeCurrent = 0
-		self.timeStart = 0
-		self.timeEnd = 0
-		self.time = [0, 0] # TODO replace
-
+		self.time = [0, 0]
 		# UI
 		self.layoutMain = None
 		self.sliderPRadius = None
@@ -183,7 +154,7 @@ class OVLP:
 				self.markerColorDefault = OVLP.cGray
 				self.markerColorChanged = OVLP.cBlue
 				c.flowLayout(p=parent)
-				self._slider = c.floatSliderGrp(l = " " + label, v = self._value, cc = self._ccCommand, dc = self._ccCommand, fmn = fieldMin, fmx = fieldMax, min = min, max = max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth1, OVLP.sliderWidth2, OVLP.sliderWidth3))
+				self._slider = c.floatSliderGrp(l = " " + label, v = self._value, cc = self._ccCommand, dc = self._ccCommand, fmn = fieldMin, fmx = fieldMax, min = min, max = max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]))
 				c.popupMenu(p = self._slider)
 				c.menuItem(l = "reset", c = self.ValueReset)
 				c.menuItem(l = "get value", c = self.ValueGet)
@@ -280,12 +251,12 @@ class OVLP:
 
 	def ConvertText(self, text, direction=True, *args):
 		if (direction):
-			_text = text.replace("|", OVLP.replaceSymbol1)
-			_text = _text.replace(":", OVLP.replaceSymbol2)
+			_text = text.replace("|", OVLP.replaceSymbols[0])
+			_text = _text.replace(":", OVLP.replaceSymbols[1])
 			return _text
 		else:
-			_text = text.replace(OVLP.replaceSymbol1, "|")
-			_text = _text.replace(OVLP.replaceSymbol2, ":")
+			_text = text.replace(OVLP.replaceSymbols[0], "|")
+			_text = _text.replace(OVLP.replaceSymbols[1], ":")
 			return _text
 
 	### LOGIC
@@ -301,10 +272,10 @@ class OVLP:
 		
 		# Get min/max anim range time and reset time slider
 		# self.timeCurrent = c.currentTime(q=1)
-		self.timeStart = c.playbackOptions(q=1, min=1)
-		self.timeEnd = c.playbackOptions(q=1, max=1)
-		c.playbackOptions(e=1, min = self.timeStart, max = self.timeEnd)
-		c.currentTime(self.timeStart)
+		self.time[0] = c.playbackOptions(q=1, min=1)
+		self.time[1] = c.playbackOptions(q=1, max=1)
+		c.playbackOptions(e=1, min = self.time[0], max = self.time[1])
+		c.currentTime(self.time[0])
 
 		# Create group
 		c.select(cl=1)
@@ -321,26 +292,30 @@ class OVLP:
 	def _CreateSetup(self, objCurrent, *args):
 		# Names
 		_objConverted = self.ConvertText(objCurrent)
-		nameLocGoal = OVLP.nameLocGoal + _objConverted
-		nameLocParticle = OVLP.nameLocTarget + _objConverted
+		nameLocGoal = OVLP.nameLocGoalTarget[0] + _objConverted
+		nameLocParticle = OVLP.nameLocGoalTarget[1] + _objConverted
 		nameParticle = OVLP.nameParticle + _objConverted
-		nameLocAim = OVLP.nameLocAim + _objConverted
-		nameLoftAim = OVLP.nameLoft + _objConverted
+		nameLocAimBase = OVLP.nameLocAim[0] + _objConverted
+		nameLocAimHidden = OVLP.nameLocAim[1] + _objConverted
+		nameLocAim = OVLP.nameLocAim[2] + _objConverted
+		nameLoftStart = OVLP.nameLoft[0] + _objConverted
+		nameLoftEnd = OVLP.nameLoft[1] + _objConverted
+		nameLoftShape = OVLP.nameLoft[2] + _objConverted
 
 		# Create locator for goal
-		self.locGoal = c.spaceLocator(n = nameLocGoal)[0]
-		c.parent(self.locGoal, OVLP.nameGroup)
-		c.matchTransform(self.locGoal, objCurrent, pos = True, rot = True)
-		c.parentConstraint(objCurrent, self.locGoal, maintainOffset=1)
-		c.setAttr(self.locGoal + ".visibility", 0)
-		self.positionStartGoal = c.xform(self.locGoal, q=1, t=1)
+		self.locGoalTarget[0] = c.spaceLocator(n = nameLocGoal)[0]
+		c.parent(self.locGoalTarget[0], OVLP.nameGroup)
+		c.matchTransform(self.locGoalTarget[0], objCurrent, pos = True, rot = True)
+		c.parentConstraint(objCurrent, self.locGoalTarget[0], maintainOffset=1)
+		c.setAttr(self.locGoalTarget[0] + ".visibility", 0)
+		self.startPositionGoalParticle[0] = c.xform(self.locGoalTarget[0], q=1, t=1)
 
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
 		self.particle = c.nParticle(n = nameParticle, position = _position, conserve = 1)[0]
-		c.goal(useTransformAsGoal = 1, goal = self.locGoal)
+		c.goal(useTransformAsGoal = 1, goal = self.locGoalTarget[0])
 		c.parent(self.particle, OVLP.nameGroup)
-		self.positionStartParticle = c.xform(self.particle, q=1, t=1)
+		self.startPositionGoalParticle[1] = c.xform(self.particle, q=1, t=1)
 		c.setAttr(self.particle + ".overrideEnabled", 1)
 		c.setAttr(self.particle + ".overrideDisplayType", 2)
 
@@ -359,68 +334,68 @@ class OVLP:
 		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
-		c.setAttr(self.nucleus + ".startFrame", self.timeStart) # TODO
+		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO
 		c.setAttr(self.nucleus + ".visibility", 0)
 
 		# Create and connect locator to particle
-		self.locTarget = c.spaceLocator(n = nameLocParticle)[0]
-		c.parent(self.locTarget, OVLP.nameGroup)
-		c.matchTransform(self.locTarget, objCurrent, pos = True, rot = True)
-		c.connectAttr(self.particle + ".center", self.locTarget + ".translate", f = True)
-		c.setAttr(self.locTarget + ".visibility", 0)
+		self.locGoalTarget[1] = c.spaceLocator(n = nameLocParticle)[0]
+		c.parent(self.locGoalTarget[1], OVLP.nameGroup)
+		c.matchTransform(self.locGoalTarget[1], objCurrent, pos = True, rot = True)
+		c.connectAttr(self.particle + ".center", self.locGoalTarget[1] + ".translate", f = True)
+		c.setAttr(self.locGoalTarget[1] + ".visibility", 0)
 
 		# Create base aim locator
-		_locAimBase = c.spaceLocator(n = "Base" + nameLocAim)[0]
-		c.parent(_locAimBase, OVLP.nameGroup)
-		c.matchTransform(_locAimBase, objCurrent, position = True, rotation = True)
-		c.parentConstraint(objCurrent, _locAimBase, maintainOffset = True)
-		c.setAttr(_locAimBase + ".visibility", 0)
+		self.locAim[0] = c.spaceLocator(n = nameLocAimBase)[0]
+		c.parent(self.locAim[0], OVLP.nameGroup)
+		c.matchTransform(self.locAim[0], objCurrent, position = True, rotation = True)
+		c.parentConstraint(objCurrent, self.locAim[0], maintainOffset = True)
+		c.setAttr(self.locAim[0] + ".visibility", 0)
 
 		# Create hidden aim locator
-		self.locAimHidden = c.spaceLocator(n = "Hidden" + nameLocAim)[0]
-		c.matchTransform(self.locAimHidden, _locAimBase, pos = True, rot = True)
-		c.parent(self.locAimHidden, _locAimBase)
-		c.aimConstraint(self.locTarget, self.locAimHidden, weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1))
+		self.locAim[1] = c.spaceLocator(n = nameLocAimHidden)[0]
+		c.matchTransform(self.locAim[1], self.locAim[0], pos = True, rot = True)
+		c.parent(self.locAim[1], self.locAim[0])
+		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1))
 		
 		# Create aim locator
-		self.locAim = c.spaceLocator(n = nameLocAim)[0]
-		c.matchTransform(self.locAim, _locAimBase, pos = True, rot = True)
-		c.parent(self.locAim, _locAimBase)
+		self.locAim[2] = c.spaceLocator(n = nameLocAim)[0]
+		c.matchTransform(self.locAim[2], self.locAim[0], pos = True, rot = True)
+		c.parent(self.locAim[2], self.locAim[0])
 
 		# Create aim loft
-		_circle1 = c.circle(name = "_1" + nameLoftAim, degree = 1, sections = 4, normal = [0, 1, 0])[0]
-		_circle2 = c.duplicate(_circle1, name = nameLoftAim)[0]
-		self.loft = _circle2
+		# self.loft[0]
+		self.loft[0] = c.circle(name = nameLoftStart, degree = 1, sections = 4, normal = [0, 1, 0])[0]
+		self.loft[1] = c.duplicate(self.loft[0], name = nameLoftEnd)[0]
 		#
 		_scale1 = 0.001
-		_scale2 = self.sliderPRadius.ValueCheck() * 0.85
-		c.setAttr(_circle1 + ".scaleX", _scale1)
-		c.setAttr(_circle1 + ".scaleY", _scale1)
-		c.setAttr(_circle1 + ".scaleZ", _scale1)
-		c.setAttr(_circle2 + ".scaleX", _scale2)
-		c.setAttr(_circle2 + ".scaleY", _scale2)
-		c.setAttr(_circle2 + ".scaleZ", _scale2)
-		c.setAttr(_circle1 + ".visibility", 0)
-		c.setAttr(_circle2 + ".visibility", 0)
+		_scale2 = self.sliderPRadius.ValueCheck() * OVLP.loftFactor
+		c.setAttr(self.loft[0] + ".scaleX", _scale1)
+		c.setAttr(self.loft[0] + ".scaleY", _scale1)
+		c.setAttr(self.loft[0] + ".scaleZ", _scale1)
+		c.setAttr(self.loft[1] + ".scaleX", _scale2)
+		c.setAttr(self.loft[1] + ".scaleY", _scale2)
+		c.setAttr(self.loft[1] + ".scaleZ", _scale2)
+		c.setAttr(self.loft[0] + ".visibility", 0)
+		c.setAttr(self.loft[1] + ".visibility", 0)
 		#
-		c.matchTransform(_circle1, self.locAim, pos = True, rot = True)
-		c.parent(_circle1, self.locAim)
-		c.matchTransform(_circle2, self.locTarget, pos = True)
-		c.parent(_circle2, self.locTarget)
-		c.orientConstraint(self.locAim, _circle2)
+		c.matchTransform(self.loft[0], self.locAim[2], pos = True, rot = True)
+		c.parent(self.loft[0], self.locAim[2])
+		c.matchTransform(self.loft[1], self.locGoalTarget[1], pos = True)
+		c.parent(self.loft[1], self.locGoalTarget[1])
+		c.orientConstraint(self.locAim[2], self.loft[1])
 		#
-		_loft = c.loft(_circle1, _circle2, name = "_shape" + nameLoftAim, reverseSurfaceNormals = 0, uniform = 1, polygon = 0)[0]
-		c.parent(_loft, OVLP.nameGroup)
-		c.setAttr(_loft + ".overrideEnabled", 1)
-		c.setAttr(_loft + ".overrideDisplayType", 2)
-		c.setAttr(_loft + ".overrideShading", 0)
+		self.loft[2] = c.loft(self.loft[0], self.loft[1], name = nameLoftShape, reverseSurfaceNormals = 0, uniform = 1, polygon = 0)[0]
+		c.parent(self.loft[2], OVLP.nameGroup)
+		c.setAttr(self.loft[2] + ".overrideEnabled", 1)
+		c.setAttr(self.loft[2] + ".overrideDisplayType", 2)
+		c.setAttr(self.loft[2] + ".overrideShading", 0)
 
 	def _DeleteSetup(self, deselect=True, *args):
 		# _selected = self.selected
 		self.selected = ""
-		self.locAim = ""
-		self.locGoal = ""
-		self.locTarget = ""
+		self.locAim[2] = ""
+		self.locGoalTarget[0] = ""
+		self.locGoalTarget[1] = ""
 		self.particle = ""
 		self.nucleus = ""
 		# Revert cached timeslider
@@ -455,11 +430,11 @@ class OVLP:
 		# Try to get suffix name
 		objectName = ""
 		for item in children:
-			splitNames = item.split(OVLP.nameLocAim)
+			splitNames = item.split(OVLP.nameLocAim[2])
 			if (len(splitNames) < 2):
-				splitNames = item.split(OVLP.nameLocGoal)
+				splitNames = item.split(OVLP.nameLocGoalTarget[0])
 				if (len(splitNames) < 2):
-					splitNames = item.split(OVLP.nameLocTarget)
+					splitNames = item.split(OVLP.nameLocGoalTarget[1])
 					if (len(splitNames) < 2):
 						splitNames = item.split(OVLP.nameParticle)
 			lastName = splitNames[-1]
@@ -473,12 +448,12 @@ class OVLP:
 		_converted = self.ConvertText(objectName, False)
 		if (c.objExists(_converted)):
 			self.selected = _converted
-		if (c.objExists(OVLP.nameLocAim + objectName)):
-			self.locAim = OVLP.nameLocAim + objectName
-		if (c.objExists(OVLP.nameLocGoal + objectName)):
-			self.locGoal = OVLP.nameLocGoal + objectName
-		if (c.objExists(OVLP.nameLocTarget + objectName)):
-			self.locTarget = OVLP.nameLocTarget + objectName
+		if (c.objExists(OVLP.nameLocAim[2] + objectName)):
+			self.locAim[2] = OVLP.nameLocAim[2] + objectName
+		if (c.objExists(OVLP.nameLocGoalTarget[0] + objectName)):
+			self.locGoalTarget[0] = OVLP.nameLocGoalTarget[0] + objectName
+		if (c.objExists(OVLP.nameLocGoalTarget[1] + objectName)):
+			self.locGoalTarget[1] = OVLP.nameLocGoalTarget[1] + objectName
 		if (c.objExists(OVLP.nameParticle + objectName)):
 			self.particle = OVLP.nameParticle + objectName
 		_nucleus = c.ls(type='nucleus')
@@ -502,9 +477,9 @@ class OVLP:
 	def _SelectNucleus(self, *args):
 		self._Select(self.nucleus)
 	def _SelectTarget(self, *args):
-		self._Select(self.locTarget)
+		self._Select(self.locGoalTarget[1])
 	def _SelectAim(self, *args):
-		self._Select(self.locAim)
+		self._Select(self.locAim[2])
 
 	def _ValuesSetSimulation(self, *args):
 		self.sliderPRadius.ValueSet()
@@ -520,14 +495,14 @@ class OVLP:
 		self.sliderOffsetY.ValueSet()
 		self.sliderOffsetZ.ValueSet()
 	def _AimLoftScale(self, *args):
-		if (self.loft == ""):
+		if (self.loft[1] == ""):
 			return
-		if (not c.objExists(self.loft)):
+		if (not c.objExists(self.loft[1])):
 			return
-		_scale = self.sliderPRadius.ValueCheck()
-		c.setAttr(self.loft + ".scaleX", _scale)
-		c.setAttr(self.loft + ".scaleY", _scale)
-		c.setAttr(self.loft + ".scaleZ", _scale)
+		_scale = self.sliderPRadius.ValueCheck() * OVLP.loftFactor
+		c.setAttr(self.loft[1] + ".scaleX", _scale)
+		c.setAttr(self.loft[1] + ".scaleY", _scale)
+		c.setAttr(self.loft[1] + ".scaleZ", _scale)
 	
 	def _ValuesGetSimulation(self, *args):
 		self.sliderPConserve.ValueGet()
@@ -559,7 +534,7 @@ class OVLP:
 		self._ValuesSetOffset()
 		if (self.selected == ""):
 			return
-		c.currentTime(self.timeStart)
+		c.currentTime(self.time[0])
 		# Get values from sliders
 		values = [0, 0, 0]
 		values[0] = self.sliderOffsetX.ValueCheck()
@@ -567,31 +542,31 @@ class OVLP:
 		values[2] = self.sliderOffsetZ.ValueCheck()
 		# Set locGoal constraint offset
 		_goalAttributes = [0, 0, 0]
-		_goalAttributes[0] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateX"
-		_goalAttributes[1] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateY"
-		_goalAttributes[2] = self.locGoal + "_parentConstraint1.target[0].targetOffsetTranslateZ"
+		_goalAttributes[0] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
+		_goalAttributes[1] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateY"
+		_goalAttributes[2] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateZ"
 		c.setAttr(_goalAttributes[0], values[0])
 		c.setAttr(_goalAttributes[1], values[1])
 		c.setAttr(_goalAttributes[2], values[2])
 		# Get offset
-		_goalPosition = c.xform(self.locGoal, q=1, t=1)
+		_goalPosition = c.xform(self.locGoalTarget[0], q=1, t=1)
 		_goalOffset = [0, 0, 0]
-		_goalOffset[0] = self.positionStartGoal[0] - _goalPosition[0]
-		_goalOffset[1] = self.positionStartGoal[1] - _goalPosition[1]
-		_goalOffset[2] = self.positionStartGoal[2] - _goalPosition[2]
+		_goalOffset[0] = self.startPositionGoalParticle[0][0] - _goalPosition[0]
+		_goalOffset[1] = self.startPositionGoalParticle[0][1] - _goalPosition[1]
+		_goalOffset[2] = self.startPositionGoalParticle[0][2] - _goalPosition[2]
 		# Set particle attributes
 		_particleAttributes = [0, 0, 0]
 		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
 		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
 		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
-		c.setAttr(_particleAttributes[0], self.positionStartParticle[0] - _goalOffset[0])
-		c.setAttr(_particleAttributes[1], self.positionStartParticle[1] - _goalOffset[1])
-		c.setAttr(_particleAttributes[2], self.positionStartParticle[2] - _goalOffset[2])
+		c.setAttr(_particleAttributes[0], self.startPositionGoalParticle[1][0] - _goalOffset[0])
+		c.setAttr(_particleAttributes[1], self.startPositionGoalParticle[1][1] - _goalOffset[1])
+		c.setAttr(_particleAttributes[2], self.startPositionGoalParticle[1][2] - _goalOffset[2])
 		# Reconstrain aim locator to hidden aim
-		c.setAttr(self.locAim + ".rotateX", 0)
-		c.setAttr(self.locAim + ".rotateY", 0)
-		c.setAttr(self.locAim + ".rotateZ", 0)
-		c.orientConstraint(self.locAimHidden, self.locAim, maintainOffset = True)
+		c.setAttr(self.locAim[2] + ".rotateX", 0)
+		c.setAttr(self.locAim[2] + ".rotateY", 0)
+		c.setAttr(self.locAim[2] + ".rotateZ", 0)
+		c.orientConstraint(self.locAim[1], self.locAim[2], maintainOffset = True)
 
 	def _CreateCube(self, *args):
 		print("empty button")
