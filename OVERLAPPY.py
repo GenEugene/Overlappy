@@ -16,6 +16,7 @@ class OVLP:
 	nameLocTarget = "_locTarget_"
 	nameLocAim = "_locAim_"
 	nameParticle = "_particle_"
+	nameLoft = "_loft_"
 	#
 	replaceSymbol1 = "_R1S_" # for "|"
 	replaceSymbol2 = "_R2S_" # for ":"
@@ -73,14 +74,14 @@ class OVLP:
 		self.locAim = ""
 		self.particle = ""
 		self.nucleus = ""
+		self.loft = ""
 
 		# READONLY
 		self.positionStartGoal = None
 		self.positionStartParticle = None
-		self.timeCurrent = 0
+		# self.timeCurrent = 0
 		self.timeStart = 0
 		self.timeEnd = 0
-		self.simulated = False
 
 		# UI
 		self.layoutMain = None
@@ -114,7 +115,7 @@ class OVLP:
 
 		# SETUP
 		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
-		ccResetSliders = self._ValuesResetAll
+		ccResetSliders = self._ResetSliders
 		ccDeleteSetup = self._DeleteSetup
 		ccInitSetup = self._InitSetup
 		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
@@ -139,13 +140,19 @@ class OVLP:
 
 		# BAKING
 		# frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
-		c.button(l = "OBJECT", bgc = OVLP.cOrange)
-		c.button(l = "TARGET", bgc = OVLP.cOrange)
-		c.button(l = "AIM", bgc = OVLP.cOrange)
-		c.button(l = "SELECTED", bgc = OVLP.cOrange)
-		c.button(l = "LOCATOR", bgc = OVLP.cOrange)
-		c.button(l = "LAYER", bgc = OVLP.cOrange)
+		# c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
+		# c.button(l = "OBJECT", bgc = OVLP.cOrange)
+		# c.button(l = "TARGET", bgc = OVLP.cOrange)
+		# c.button(l = "AIM", bgc = OVLP.cOrange)
+		# c.button(l = "SELECTED", bgc = OVLP.cOrange)
+		# c.button(l = "LOCATOR", bgc = OVLP.cOrange)
+		# c.button(l = "LAYER", bgc = OVLP.cOrange)
+
+		# DEV TOOLS
+		frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		ccCreateCube = self._CreateCube
+		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
+		c.button(l = "CUBE", c = ccCreateCube, bgc = OVLP.cBlack)
 
 		# SLIDERS
 		class classSlider:
@@ -276,7 +283,7 @@ class OVLP:
 		self.selected = self.selected[0]
 		
 		# Get min/max anim range time and reset time slider
-		self.timeCurrent = c.currentTime(q=1)
+		# self.timeCurrent = c.currentTime(q=1)
 		self.timeStart = c.playbackOptions(q=1, min=1)
 		self.timeEnd = c.playbackOptions(q=1, max=1)
 		c.playbackOptions(e=1, min = self.timeStart, max = self.timeEnd)
@@ -294,7 +301,6 @@ class OVLP:
 		self._OffsetUpdate()
 		
 		c.select(self.selected, r = 1)
-		self.simulated = True
 	def _CreateSetup(self, objCurrent, *args):
 		# Names
 		_objConverted = self.ConvertText(objCurrent)
@@ -302,6 +308,7 @@ class OVLP:
 		nameLocParticle = OVLP.nameLocTarget + _objConverted
 		nameParticle = OVLP.nameParticle + _objConverted
 		nameLocAim = OVLP.nameLocAim + _objConverted
+		nameLoftAim = OVLP.nameLoft + _objConverted
 
 		# Create locator for goal
 		self.locGoal = c.spaceLocator(n = nameLocGoal)[0]
@@ -317,6 +324,8 @@ class OVLP:
 		c.goal(useTransformAsGoal = 1, goal = self.locGoal)
 		c.parent(self.particle, OVLP.nameGroup)
 		self.positionStartParticle = c.xform(self.particle, q=1, t=1)
+		c.setAttr(self.particle + ".overrideEnabled", 1)
+		c.setAttr(self.particle + ".overrideDisplayType", 2)
 
 		# Set simulation attributes
 		c.setAttr(self.particle + "Shape.radius", self.sliderPRadius.ValueCheck())
@@ -328,8 +337,8 @@ class OVLP:
 		c.setAttr(self.particle + "Shape.goalWeight[0]", self.sliderGWeight.ValueCheck())
 
 		# Nucleus detection
-		_nucleus = c.ls(type='nucleus')
-		self.nucleus = _nucleus[0]
+		self.nucleus = c.ls(type='nucleus')[0]
+		c.parent(self.nucleus, OVLP.nameGroup)
 		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
@@ -344,11 +353,11 @@ class OVLP:
 		c.setAttr(self.locTarget + ".visibility", 0)
 
 		# Create base aim locator
-		_locAimBase = c.spaceLocator(n = "Base" + nameLocAim)
+		_locAimBase = c.spaceLocator(n = "Base" + nameLocAim)[0]
 		c.parent(_locAimBase, OVLP.nameGroup)
 		c.matchTransform(_locAimBase, objCurrent, position = True, rotation = True)
 		c.parentConstraint(objCurrent, _locAimBase, maintainOffset = True)
-		# c.setAttr(_locAimBase[0] + ".visibility", 0)
+		c.setAttr(_locAimBase + ".visibility", 0)
 
 		# Create hidden aim locator
 		self.locAimHidden = c.spaceLocator(n = "Hidden" + nameLocAim)[0]
@@ -360,9 +369,35 @@ class OVLP:
 		self.locAim = c.spaceLocator(n = nameLocAim)[0]
 		c.matchTransform(self.locAim, _locAimBase, pos = True, rot = True)
 		c.parent(self.locAim, _locAimBase)
-		c.setAttr(self.locAim + "Shape.localScaleX", 50)#
-		c.setAttr(self.locAim + "Shape.localScaleY", 50)#
-		c.setAttr(self.locAim + "Shape.localScaleZ", 50)#
+
+		# Create aim loft
+		_circle1 = c.circle(name = "_1" + nameLoftAim, degree = 1, sections = 4, normal = [0, 1, 0])[0]
+		_circle2 = c.duplicate(_circle1, name = nameLoftAim)[0]
+		self.loft = _circle2
+		#
+		_scale1 = 0.001
+		_scale2 = self.sliderPRadius.ValueCheck() * 0.85
+		c.setAttr(_circle1 + ".scaleX", _scale1)
+		c.setAttr(_circle1 + ".scaleY", _scale1)
+		c.setAttr(_circle1 + ".scaleZ", _scale1)
+		c.setAttr(_circle2 + ".scaleX", _scale2)
+		c.setAttr(_circle2 + ".scaleY", _scale2)
+		c.setAttr(_circle2 + ".scaleZ", _scale2)
+		c.setAttr(_circle1 + ".visibility", 0)
+		c.setAttr(_circle2 + ".visibility", 0)
+		#
+		c.matchTransform(_circle1, self.locAim, pos = True, rot = True)
+		c.parent(_circle1, self.locAim)
+		c.matchTransform(_circle2, self.locTarget, pos = True)
+		c.parent(_circle2, self.locTarget)
+		c.orientConstraint(self.locAim, _circle2)
+		#
+		_loft = c.loft(_circle1, _circle2, name = "_shape" + nameLoftAim, reverseSurfaceNormals = 0, uniform = 1, polygon = 0)[0]
+		c.parent(_loft, OVLP.nameGroup)
+		c.setAttr(_loft + ".overrideEnabled", 1)
+		c.setAttr(_loft + ".overrideDisplayType", 2)
+		c.setAttr(_loft + ".overrideShading", 0)
+
 	def _DeleteSetup(self, deselect=True, *args):
 		# _selected = self.selected
 		self.selected = ""
@@ -456,6 +491,7 @@ class OVLP:
 
 	def _ValuesSetSimulation(self, *args):
 		self.sliderPRadius.ValueSet()
+		self._AimLoftScale()
 		self.sliderPConserve.ValueSet()
 		self.sliderPDrag.ValueSet()
 		self.sliderPDamp.ValueSet()
@@ -466,6 +502,15 @@ class OVLP:
 		self.sliderOffsetX.ValueSet()
 		self.sliderOffsetY.ValueSet()
 		self.sliderOffsetZ.ValueSet()
+	def _AimLoftScale(self, *args):
+		if (self.loft == ""):
+			return
+		if (not c.objExists(self.loft)):
+			return
+		_scale = self.sliderPRadius.ValueCheck()
+		c.setAttr(self.loft + ".scaleX", _scale)
+		c.setAttr(self.loft + ".scaleY", _scale)
+		c.setAttr(self.loft + ".scaleZ", _scale)
 	
 	def _ValuesGetSimulation(self, *args):
 		self.sliderPConserve.ValueGet()
@@ -475,7 +520,7 @@ class OVLP:
 		self.sliderGWeight.ValueGet()
 		self.sliderNTimeScale.ValueGet()
 	
-	def _ValuesResetAll(self, *args):
+	def _ResetSliders(self, *args):
 		self.sliderPRadius.ValueReset()
 		self._ValuesResetSimulation()
 		self._ValuesResetOffset()
@@ -530,6 +575,9 @@ class OVLP:
 		c.setAttr(self.locAim + ".rotateY", 0)
 		c.setAttr(self.locAim + ".rotateZ", 0)
 		c.orientConstraint(self.locAimHidden, self.locAim, maintainOffset = True)
+
+	def _CreateCube(self, *args):
+		print("empty button")
 
 	### EXECUTION
 	def Start(self, *args):
