@@ -12,10 +12,12 @@ class OVLP:
 	textTitle = "Overlappy v0.2.0"
 	nameWindow = "__OverlappyWindow__"
 	nameGroup = "_OverlappyGroup_"
+	#
 	nameLocGoalTarget = ("_locGoal_", "_locTarget_")
 	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_")
 	nameParticle = "_particle_"
 	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
+	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 
 	# WINDOW
@@ -100,10 +102,15 @@ class OVLP:
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.SceneReload)
 		c.menu(label = 'Script')
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
+
+		# DEV TOOLS
+		frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		ccTestFunc = self._TestFunction
+		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
+		c.button(l = "TEST FUNCTION", c = ccTestFunc, bgc = OVLP.cBlack)
 		
 		# BUTTONS
 		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-
 		# SETUP
 		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
 		ccResetSliders = self._ResetAll
@@ -113,7 +120,6 @@ class OVLP:
 		c.button(l = "DELETE SETUP", c = ccDeleteSetup, bgc = OVLP.cRed)
 		c.button(l = "CREATE SETUP", c = ccInitSetup, bgc = OVLP.cGreen)
 		# c.button(l = "", enable=0)
-		
 		# SELECT
 		c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
 		ccScan = self._ScanObjectsFromScene
@@ -138,12 +144,6 @@ class OVLP:
 		# c.button(l = "SELECTED", bgc = OVLP.cOrange)
 		# c.button(l = "LOCATOR", bgc = OVLP.cOrange)
 		# c.button(l = "LAYER", bgc = OVLP.cOrange)
-
-		# DEV TOOLS
-		frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		ccTestFunc = self._TestFunction
-		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
-		c.button(l = "TEST FUNCTION", c = ccTestFunc, bgc = OVLP.cBlack)
 
 		# SLIDERS
 		class classSlider:
@@ -436,23 +436,18 @@ class OVLP:
 			c.warning("Overlappy object has no children objects")
 			return
 		# Try to get suffix name
+		_tempList = [OVLP.nameLocGoalTarget[0], OVLP.nameLocGoalTarget[1], OVLP.nameParticle, OVLP.nameLocAim[0], OVLP.nameLoft[2]]
 		objectName = ""
-		for item in children:
-			splitNames = item.split(OVLP.nameLocAim[2])
-			if (len(splitNames) < 2):
-				splitNames = item.split(OVLP.nameLocGoalTarget[0])
-				if (len(splitNames) < 2):
-					splitNames = item.split(OVLP.nameLocGoalTarget[1])
-					if (len(splitNames) < 2):
-						splitNames = item.split(OVLP.nameParticle)
-			lastName = splitNames[-1]
-			if (objectName == ""):
-				objectName = lastName
-			else:
-				if (objectName == lastName):
-					continue
+		for child in children:
+			for item in _tempList:
+				splitNames = child.split(item)
+				if (len(splitNames) < 2): continue
+				lastName = splitNames[-1]
+				if (objectName == ""):
+					objectName = lastName
 				else:
-					c.warning("Suffix '{0}' don't equals to '{1}'".format(objectName, lastName))
+					if (objectName == lastName): continue
+					else: c.warning("Suffix '{0}' don't equals to '{1}'".format(objectName, lastName))
 		_converted = self.ConvertText(objectName, False)
 		if (c.objExists(_converted)):
 			self.selected = _converted

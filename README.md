@@ -22,7 +22,9 @@ https://www.artstation.com/geneugene
 ---
 # Version history
 # v0.2.0 - in progress...
-    - [OTHER] refactoring
+    - [GENERAL] full code reconstruction
+	- [NEW] main setup logic
+	- [NEW] scan overlappy objects in opened scene
 	- more notes coming soon...
 
 # v0.1.1
