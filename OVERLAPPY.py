@@ -8,6 +8,7 @@ from math import pow, sqrt
 # import maya.mel as mel
 
 class OVLP:
+	devTools = False
 	# NAMING
 	textTitle = "Overlappy v0.2.0"
 	nameWindow = "__OverlappyWindow__"
@@ -17,6 +18,8 @@ class OVLP:
 	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_")
 	nameParticle = "_particle_"
 	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
+	#
+	nameBakeLocator = ("BakedWorldLocator_")
 	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 
@@ -72,6 +75,7 @@ class OVLP:
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
+		# self.bake = [""]
 		# READONLY
 		self.startPositionGoalParticle = [None, None]
 		# self.timeCurrent = 0
@@ -103,11 +107,12 @@ class OVLP:
 		c.menu(label = 'Script')
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
 
-		# DEV TOOLS
-		frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		ccTestFunc = self._TestFunction
-		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
-		c.button(l = "TEST FUNCTION", c = ccTestFunc, bgc = OVLP.cBlack)
+		if (OVLP.devTools):
+			# DEV TOOLS
+			frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+			ccDEVFunction = self._DEVFunction
+			c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
+			c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
 		
 		# BUTTONS
 		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
@@ -136,14 +141,18 @@ class OVLP:
 		c.button(l = "AIM", c = ccSelectAim, bgc = OVLP.cLBlue)
 
 		# BAKING
-		# frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		# c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
-		# c.button(l = "OBJECT", bgc = OVLP.cOrange)
-		# c.button(l = "TARGET", bgc = OVLP.cOrange)
-		# c.button(l = "AIM", bgc = OVLP.cOrange)
-		# c.button(l = "SELECTED", bgc = OVLP.cOrange)
-		# c.button(l = "LOCATOR", bgc = OVLP.cOrange)
-		# c.button(l = "LAYER", bgc = OVLP.cOrange)
+		frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameBaking)
+		c.button(l = "TO TRANSLATION", bgc = OVLP.cOrange, en=0)
+		c.button(l = "TO ROTATION", bgc = OVLP.cOrange, en=0)
+		# c.button(l = "TARGET", bgc = OVLP.cOrange, en=0)
+		# c.button(l = "AIM", bgc = OVLP.cOrange, en=0)
+		# c.button(l = "SELECTED", bgc = OVLP.cOrange, en=0)
+		# c.button(l = "LAYER", bgc = OVLP.cOrange, en=0)
+		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameBaking)
+		ccBakeToWorldLoc = self._BakeToWorldLocator
+		c.button(l = "TO WORLD LOCATOR", c = ccBakeToWorldLoc, bgc = OVLP.cOrange)
+		c.button(l = "FROM => TO", bgc = OVLP.cOrange, en=0)
 
 		# SLIDERS
 		class classSlider:
@@ -588,9 +597,41 @@ class OVLP:
 		self.sliderOffsetZ.ValueReset()
 		self._ValuesSetOffset()
 	
+	### BAKE
+	def _BakeToWorldLocator(self, *args):
+		_selected = c.ls(sl = 1) # Get selected objects
+		if (len(_selected) == 0):
+			c.warning("Need to select at least 1 object")
+			return
+		_locators = []
+		for item in _selected: # Create locator
+			_name = OVLP.nameBakeLocator + "1"
+			_locator = c.spaceLocator(n = _name)[0]
+			c.matchTransform(_locator, item, pos = True, rot = True)
+			c.parentConstraint(item, _locator, maintainOffset = 1)
+			c.scaleConstraint(item, _locator, maintainOffset = 1)
+			_scale = 50
+			c.setAttr(_locator + "Shape.localScaleX", _scale)
+			c.setAttr(_locator + "Shape.localScaleY", _scale)
+			c.setAttr(_locator + "Shape.localScaleZ", _scale)
+			_locators.append(_locator)
+		c.select(_locators, r=1) # Bake and cleanup
+		OVLP.BakeSelected()
+		for loc in _locators:
+			_children = c.listRelatives(loc, type = "constraint")
+			for child in _children:
+				c.delete(child)
+
 	### OTHER
-	def _TestFunction(self, *args):
-		print("Test Function")
+	@staticmethod
+	def BakeSelected(DoNotCut=1): # TODO from GETools class (need to merge in future)
+		_startTime = c.playbackOptions(q = 1, min = 1)
+		_endTime = c.playbackOptions(q = 1, max = 1)
+		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = DoNotCut, simulation = 1)
+	
+	### DEV TOOLS
+	def _DEVFunction(self, *args):
+		print("DEV Function")
 	
 	### EXECUTION
 	def Start(self, *args):
