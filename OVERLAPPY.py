@@ -3,6 +3,7 @@
 # https://github.com/GenEugene/Overlappy
 
 import maya.cmds as c
+from math import pow, sqrt
 # import sys, os
 # import maya.mel as mel
 
@@ -22,7 +23,9 @@ class OVLP:
 	windowHeight = 28
 	sliderWidth = (60, 60, 10)
 	markerWidth = 6
+
 	loftFactor = 0.9
+	loftMinDistance = 5
 
 	# SETTINGS # TODO: move to preset
 	particleRadius = 20
@@ -103,7 +106,7 @@ class OVLP:
 
 		# SETUP
 		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
-		ccResetSliders = self._ResetSliders
+		ccResetSliders = self._ResetAll
 		ccDeleteSetup = self._DeleteSetup
 		ccInitSetup = self._InitSetup
 		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
@@ -138,13 +141,13 @@ class OVLP:
 
 		# DEV TOOLS
 		frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		ccCreateCube = self._CreateCube
+		ccTestFunc = self._TestFunction
 		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
-		c.button(l = "CUBE", c = ccCreateCube, bgc = OVLP.cBlack)
+		c.button(l = "TEST FUNCTION", c = ccTestFunc, bgc = OVLP.cBlack)
 
 		# SLIDERS
 		class classSlider:
-			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="", precision=3):
+			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="", precision=3, submenuReset=True, submenuGet=True):
 				self._attribute = attribute
 				self._name = name
 				self._nameAdd = nameAdd
@@ -153,11 +156,14 @@ class OVLP:
 				self._precision = precision
 				self.markerColorDefault = OVLP.cGray
 				self.markerColorChanged = OVLP.cBlue
+				self.valueCached = 0;
 				c.flowLayout(p=parent)
 				self._slider = c.floatSliderGrp(l = " " + label, v = self._value, cc = self._ccCommand, dc = self._ccCommand, fmn = fieldMin, fmx = fieldMax, min = min, max = max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]))
 				c.popupMenu(p = self._slider)
-				c.menuItem(l = "reset", c = self.ValueReset)
-				c.menuItem(l = "get value", c = self.ValueGet)
+				if (submenuReset):
+					c.menuItem(l = "reset", c = self.ValueReset)
+				if (submenuGet):
+					c.menuItem(l = "get value", c = self.ValueGet)
 				self._marker = c.button(l="", enable=0, w = OVLP.markerWidth, bgc = self.markerColorDefault)
 			def ValueGet(self, *args):
 				firstName = _OVERLAPPY.selected
@@ -209,12 +215,16 @@ class OVLP:
 				self._ccCommand()
 			def ValueCheck(self, *args):
 				return c.floatSliderGrp(self._slider, q=1, v=1)
+			def ValueCachedGet(self, *args):
+				return self.valueCached
+			def ValueCachedSet(self, *args):
+				self.valueCached = c.floatSliderGrp(self._slider, q=1, v=1)
 
 		# SIMULATION SETTINGS
 		layoutSliders = c.frameLayout(l = "SIMULATION", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
-		ccResetValuesSimulation = self._ValuesResetSimulation
-		ccGetValuesSimulation = self._ValuesGetSimulation
+		ccResetValuesSimulation = self._ResetSimulation
+		ccGetValuesSimulation = self._GetSimulation
 		c.button(l = "RESET", c = ccResetValuesSimulation, bgc = OVLP.cYellow)
 		c.button(l = "GET", c = ccGetValuesSimulation, bgc = OVLP.cGray)
 		c.columnLayout(p = layoutSliders)
@@ -229,26 +239,25 @@ class OVLP:
 		# OFFSET SETTINGS
 		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
-		ccResetValuesOffset = self._ValuesResetOffset
+		ccResetValuesOffset = self._ResetOffset
 		c.button(l = "RESET", c = ccResetValuesOffset, bgc = OVLP.cYellow)
 		c.columnLayout(p = layoutOffset)
-		self.sliderOffsetX = classSlider("        X", "", "", False, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate)
-		self.sliderOffsetY = classSlider("        Y", "", "", False, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate)
-		self.sliderOffsetZ = classSlider("        Z", "", "", False, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate)
+		self.sliderOffsetX = classSlider("        X", "", "", False, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+		self.sliderOffsetY = classSlider("        Y", "", "", False, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+		self.sliderOffsetZ = classSlider("        Z", "", "", False, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
 
 		# RUN WINDOW
 		c.showWindow(OVLP.nameWindow)
 		self.Resize_UI()
-
 	def Resize_UI(self, *args):
 		c.window(OVLP.nameWindow, e = True, h = OVLP.windowHeight, rtf = True)
+	
 	def SceneReload(self, *args):
 		currentScene = c.file(q = True, sceneName = True)
 		if(currentScene):
 			c.file(currentScene, open = True, force = True)
 		else:
 			c.file(new = 1, f = 1)
-
 	def ConvertText(self, text, direction=True, *args):
 		if (direction):
 			_text = text.replace("|", OVLP.replaceSymbols[0])
@@ -363,10 +372,8 @@ class OVLP:
 		c.parent(self.locAim[2], self.locAim[0])
 
 		# Create aim loft
-		# self.loft[0]
 		self.loft[0] = c.circle(name = nameLoftStart, degree = 1, sections = 4, normal = [0, 1, 0])[0]
 		self.loft[1] = c.duplicate(self.loft[0], name = nameLoftEnd)[0]
-		#
 		_scale1 = 0.001
 		_scale2 = self.sliderPRadius.ValueCheck() * OVLP.loftFactor
 		c.setAttr(self.loft[0] + ".scaleX", _scale1)
@@ -382,14 +389,15 @@ class OVLP:
 		c.parent(self.loft[0], self.locAim[2])
 		c.matchTransform(self.loft[1], self.locGoalTarget[1], pos = True)
 		c.parent(self.loft[1], self.locGoalTarget[1])
-		c.orientConstraint(self.locAim[2], self.loft[1])
+		c.aimConstraint(self.loft[0], self.loft[1], weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1))
 		#
 		self.loft[2] = c.loft(self.loft[0], self.loft[1], name = nameLoftShape, reverseSurfaceNormals = 0, uniform = 1, polygon = 0)[0]
 		c.parent(self.loft[2], OVLP.nameGroup)
 		c.setAttr(self.loft[2] + ".overrideEnabled", 1)
 		c.setAttr(self.loft[2] + ".overrideDisplayType", 2)
 		c.setAttr(self.loft[2] + ".overrideShading", 0)
-
+		if (self._LoftGetDistance() < OVLP.loftMinDistance):
+			c.setAttr(self.loft[2] + ".visibility", 0)
 	def _DeleteSetup(self, deselect=True, *args):
 		# _selected = self.selected
 		self.selected = ""
@@ -483,28 +491,35 @@ class OVLP:
 
 	def _ValuesSetSimulation(self, *args):
 		self.sliderPRadius.ValueSet()
-		self._AimLoftScale()
 		self.sliderPConserve.ValueSet()
 		self.sliderPDrag.ValueSet()
 		self.sliderPDamp.ValueSet()
 		self.sliderGSmooth.ValueSet()
 		self.sliderGWeight.ValueSet()
 		self.sliderNTimeScale.ValueSet()
+		self._LoftUpdate()
 	def _ValuesSetOffset(self, *args):
 		self.sliderOffsetX.ValueSet()
 		self.sliderOffsetY.ValueSet()
 		self.sliderOffsetZ.ValueSet()
-	def _AimLoftScale(self, *args):
-		if (self.loft[1] == ""):
-			return
-		if (not c.objExists(self.loft[1])):
-			return
+		self._LoftUpdate()
+	def _LoftUpdate(self, *args):
+		if (self.loft[1] == ""): return
+		if (not c.objExists(self.loft[1])): return
 		_scale = self.sliderPRadius.ValueCheck() * OVLP.loftFactor
 		c.setAttr(self.loft[1] + ".scaleX", _scale)
 		c.setAttr(self.loft[1] + ".scaleY", _scale)
 		c.setAttr(self.loft[1] + ".scaleZ", _scale)
-	
-	def _ValuesGetSimulation(self, *args):
+		if (self._LoftGetDistance() < OVLP.loftMinDistance): c.setAttr(self.loft[2] + ".visibility", 0)
+		else: c.setAttr(self.loft[2] + ".visibility", 1)
+	def _LoftGetDistance(self, *args):
+		vector = [0, 0, 0]
+		vector[0] = self.sliderOffsetX.ValueCheck()
+		vector[1] = self.sliderOffsetY.ValueCheck()
+		vector[2] = self.sliderOffsetZ.ValueCheck()
+		return sqrt(pow(vector[0], 2) + pow(vector[1], 2) + pow(vector[2], 2)) # Distance formula : √((x2 - x1)2 + (y2 - y1)2 + (z2 - z1)2)
+
+	def _GetSimulation(self, *args):
 		self.sliderPConserve.ValueGet()
 		self.sliderPDrag.ValueGet()
 		self.sliderPDamp.ValueGet()
@@ -512,11 +527,11 @@ class OVLP:
 		self.sliderGWeight.ValueGet()
 		self.sliderNTimeScale.ValueGet()
 	
-	def _ResetSliders(self, *args):
+	def _ResetAll(self, *args):
 		self.sliderPRadius.ValueReset()
-		self._ValuesResetSimulation()
-		self._ValuesResetOffset()
-	def _ValuesResetSimulation(self, *args):
+		self._ResetSimulation()
+		self._ResetOffset()
+	def _ResetSimulation(self, *args):
 		self.sliderPConserve.ValueReset()
 		self.sliderPDrag.ValueReset()
 		self.sliderPDamp.ValueReset()
@@ -524,16 +539,25 @@ class OVLP:
 		self.sliderGWeight.ValueReset()
 		self.sliderNTimeScale.ValueReset()
 		self._ValuesSetSimulation()
-	def _ValuesResetOffset(self, *args):
+	def _ResetOffset(self, *args):
 		self.sliderOffsetX.ValueReset()
 		self.sliderOffsetY.ValueReset()
 		self.sliderOffsetZ.ValueReset()
 		self._ValuesSetOffset()
 	
 	def _OffsetUpdate(self, *args):
+		# Check cached value
+		checkX = self.sliderOffsetX.ValueCachedGet() != self.sliderOffsetX.ValueCheck()
+		checkY = self.sliderOffsetY.ValueCachedGet() != self.sliderOffsetY.ValueCheck()
+		checkZ = self.sliderOffsetZ.ValueCachedGet() != self.sliderOffsetZ.ValueCheck()
+		if (checkX or checkY or checkZ):
+			self.sliderOffsetX.ValueCachedSet()
+			self.sliderOffsetY.ValueCachedSet()
+			self.sliderOffsetZ.ValueCachedSet()
+		else: return
+
 		self._ValuesSetOffset()
-		if (self.selected == ""):
-			return
+		if (self.selected == ""): return
 		c.currentTime(self.time[0])
 		# Get values from sliders
 		values = [0, 0, 0]
@@ -568,9 +592,9 @@ class OVLP:
 		c.setAttr(self.locAim[2] + ".rotateZ", 0)
 		c.orientConstraint(self.locAim[1], self.locAim[2], maintainOffset = True)
 
-	def _CreateCube(self, *args):
-		print("empty button")
-
+	def _TestFunction(self, *args):
+		print("Test Function")
+	
 	### EXECUTION
 	def Start(self, *args):
 		_OVERLAPPY.CreateUI()
