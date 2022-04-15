@@ -108,18 +108,18 @@ class OVLP:
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
 		
 		# BUTTONS
-		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		# SETUP
-		c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameButtons)
+		c.gridLayout(p = frameButtons, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight))
 		ccResetSliders = self._ResetAll
 		ccDeleteSetup = self._DeleteSetup
 		ccInitSetup = self._InitSetup
 		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
 		c.button(l = "DELETE SETUP", c = ccDeleteSetup, bgc = OVLP.cRed)
 		c.button(l = "CREATE SETUP", c = ccInitSetup, bgc = OVLP.cGreen)
-		# c.button(l = "", enable=0)
+		# c.button(l = "", enable = 0)
 		# SELECT
-		c.gridLayout(numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight), p = frameButtons)
+		c.gridLayout(p = frameButtons, numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight))
 		ccScan = self._ScanObjectsFromScene
 		ccSelectObjects = self._SelectObjects
 		ccSelectParticle = self._SelectParticle
@@ -134,19 +134,21 @@ class OVLP:
 		c.button(l = "AIM", c = ccSelectAim, bgc = OVLP.cLBlue)
 
 		# BAKING
-		frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameBaking)
-		c.button(l = "TO TRANSLATION", bgc = OVLP.cOrange, en=0)
-		c.button(l = "TO ROTATION", bgc = OVLP.cOrange, en=0)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameBaking)
+		frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		#
+		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
+		c.button(l = "TO TRANSLATION", bgc = OVLP.cOrange, en = 0)
+		c.button(l = "TO ROTATION", bgc = OVLP.cOrange, en = 0)
+		#
+		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
 		c.button(l = "TO WORLD LOCATOR", c = ccBakeToWorldLoc, bgc = OVLP.cOrange)
-		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en=0)
+		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en = 0)
 
 		# OPTIONS
-		# frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-		# c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameOptions)
-		# c.button(l = "", bgc = OVLP.cWhite, en=0)
+		# frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		# c.gridLayout(p = frameOptions, numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight))
+		# c.button(l = "", bgc = OVLP.cWhite, en = 0)
 
 		# SLIDER CLASS
 		class classSlider:
@@ -167,7 +169,7 @@ class OVLP:
 					c.menuItem(l = "reset", c = self.ValueReset)
 				if (submenuGet):
 					c.menuItem(l = "get value", c = self.ValueGet)
-				self._marker = c.button(l="", enable=0, w = OVLP.markerWidth, bgc = self.markerColorDefault)
+				self._marker = c.button(l = "", enable = 0, w = OVLP.markerWidth, bgc = self.markerColorDefault)
 			def ValueGet(self, *args):
 				firstName = _OVERLAPPY.selected
 				if (firstName == ""):
@@ -180,22 +182,22 @@ class OVLP:
 				# Get attribute
 				try:
 					_value = c.getAttr(firstName + self._attribute)
-					c.floatSliderGrp(self._slider, e=1, v = _value)
+					c.floatSliderGrp(self._slider, e = 1, v = _value)
 				except:
 					# print("Can't get value")
 					return
 				# Marker update
 				if (round(_value, 3) != self._value):
-					c.button(self._marker, e=1, bgc = self.markerColorChanged)
+					c.button(self._marker, e = 1, bgc = self.markerColorChanged)
 				else:
-					c.button(self._marker, e=1, bgc = self.markerColorDefault)
+					c.button(self._marker, e = 1, bgc = self.markerColorDefault)
 			def ValueSet(self, *args):
 				# Marker update
-				_value = c.floatSliderGrp(self._slider, q=1, v=1)
+				_value = c.floatSliderGrp(self._slider, q = 1, v = 1)
 				if (_value != self._value):
-					c.button(self._marker, e=1, bgc = self.markerColorChanged)
+					c.button(self._marker, e = 1, bgc = self.markerColorChanged)
 				else:
-					c.button(self._marker, e=1, bgc = self.markerColorDefault)
+					c.button(self._marker, e = 1, bgc = self.markerColorDefault)
 				# Check selected
 				firstName = _OVERLAPPY.selected
 				if (firstName == ""):
@@ -213,18 +215,18 @@ class OVLP:
 					# print("Can't set value")
 					pass
 			def ValueReset(self, *args):
-				c.button(self._marker, e=1, bgc = self.markerColorDefault)
-				c.floatSliderGrp(self._slider, e=1, v = self._value)
+				c.button(self._marker, e = 1, bgc = self.markerColorDefault)
+				c.floatSliderGrp(self._slider, e = 1, v = self._value)
 				self._ccCommand()
 			def ValueCheck(self, *args):
-				return c.floatSliderGrp(self._slider, q=1, v=1)
+				return c.floatSliderGrp(self._slider, q = 1, v = 1)
 			def ValueCachedGet(self, *args):
 				return self.valueCached
 			def ValueCachedSet(self, *args):
-				self.valueCached = c.floatSliderGrp(self._slider, q=1, v=1)
+				self.valueCached = c.floatSliderGrp(self._slider, q = 1, v = 1)
 
 		# SIMULATION SETTINGS
-		layoutSliders = c.frameLayout(l = "SIMULATION", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		layoutSliders = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
 		ccResetValuesSimulation = self._ResetSimulation
 		ccGetValuesSimulation = self._GetSimulation
@@ -240,7 +242,7 @@ class OVLP:
 		self.sliderNTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, OVLP.rangeNTimeScale[0], OVLP.rangeNTimeScale[1], OVLP.rangeNTimeScale[2], OVLP.rangeNTimeScale[3], layoutSliders, self._ValuesSetSimulation)
 		
 		# OFFSET SETTINGS
-		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
 		ccResetValuesOffset = self._ResetOffset
 		c.button(l = "RESET", c = ccResetValuesOffset, bgc = OVLP.cYellow)
@@ -251,13 +253,15 @@ class OVLP:
 
 		# DEV TOOLS
 		if (OVLP.devTools):
-			frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+			frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 			ccDEVFunction = self._DEVFunction
-			ccMotionTrailDelete = self._MotionTrailDelete
-			ccMotionTrailCreate = self._MotionTrailCreate
-			c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameDev)
-			c.button(l = "MOTION TRAIL DELETE", c = ccMotionTrailDelete, bgc = OVLP.cBlack)
-			c.button(l = "MOTION TRAIL CREATE", c = ccMotionTrailCreate, bgc = OVLP.cBlack)
+			ccTrailDelete = self._MotionTrailDelete
+			ccTrailSelect = self._MotionTrailSelect
+			ccTrailCreate = self._MotionTrailCreate
+			c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameDev)
+			c.button(l = "TRAIL DELETE", c = ccTrailDelete, bgc = OVLP.cBlack)
+			c.button(l = "TRAIL SELECT", c = ccTrailSelect, bgc = OVLP.cBlack)
+			c.button(l = "TRAIL CREATE", c = ccTrailCreate, bgc = OVLP.cBlack)
 			c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
 
 		# RUN WINDOW
@@ -292,25 +296,20 @@ class OVLP:
 			self.selected = ""
 			return
 		self.selected = self.selected[0]
-		
 		# Get min/max anim range time and reset time slider
 		# self.timeCurrent = c.currentTime(q=1)
-		self.time[0] = c.playbackOptions(q=1, min=1)
-		self.time[1] = c.playbackOptions(q=1, max=1)
-		c.playbackOptions(e=1, min = self.time[0], max = self.time[1])
+		self.time[0] = c.playbackOptions(q = 1, min = 1)
+		self.time[1] = c.playbackOptions(q = 1, max = 1)
+		c.playbackOptions(e = 1, min = self.time[0], max = self.time[1])
 		c.currentTime(self.time[0])
-
 		# Create group
-		c.select(cl=1)
+		c.select(cl = 1)
 		if (c.objExists(OVLP.nameGroup)):
 			c.delete(OVLP.nameGroup)
-		c.group(em=1, n = OVLP.nameGroup)
-
+		c.group(em = 1, n = OVLP.nameGroup)
 		# Run setup logic
 		self._CreateSetup(self.selected)
-		# self._ValuesResetAll()
 		self._OffsetUpdate()
-		
 		c.select(self.selected, r = 1)
 	def _CreateSetup(self, objCurrent, *args):
 		# Names
@@ -329,16 +328,16 @@ class OVLP:
 		self.locGoalTarget[0] = c.spaceLocator(n = nameLocGoal)[0]
 		c.parent(self.locGoalTarget[0], OVLP.nameGroup)
 		c.matchTransform(self.locGoalTarget[0], objCurrent, pos = True, rot = True)
-		c.parentConstraint(objCurrent, self.locGoalTarget[0], maintainOffset=1)
+		c.parentConstraint(objCurrent, self.locGoalTarget[0], maintainOffset = 1)
 		c.setAttr(self.locGoalTarget[0] + ".visibility", 0)
-		self.startPositionGoalParticle[0] = c.xform(self.locGoalTarget[0], q=1, t=1)
+		self.startPositionGoalParticle[0] = c.xform(self.locGoalTarget[0], q = 1, t = 1)
 
 		# Create particle, goal and get selected object position
 		_position = c.xform(objCurrent, q = 1, worldSpace = 1, rotatePivot = 1)
 		self.particle = c.nParticle(n = nameParticle, position = _position, conserve = 1)[0]
 		c.goal(useTransformAsGoal = 1, goal = self.locGoalTarget[0])
 		c.parent(self.particle, OVLP.nameGroup)
-		self.startPositionGoalParticle[1] = c.xform(self.particle, q=1, t=1)
+		self.startPositionGoalParticle[1] = c.xform(self.particle, q = 1, t = 1)
 		c.setAttr(self.particle + ".overrideEnabled", 1)
 		c.setAttr(self.particle + ".overrideDisplayType", 2)
 
@@ -352,8 +351,8 @@ class OVLP:
 		c.setAttr(self.particle + "Shape.goalWeight[0]", self.sliderGWeight.ValueCheck())
 
 		# Nucleus detection
-		self.nucleus = c.ls(type='nucleus')[0]
-		# c.parent(self.nucleus, OVLP.nameGroup)
+		self.nucleus = c.ls(type = 'nucleus')[0]
+		# c.parent(self.nucleus, OVLP.nameGroup) # TODO
 		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
@@ -428,7 +427,7 @@ class OVLP:
 		if (c.objExists(OVLP.nameGroup)):
 			c.delete(OVLP.nameGroup)
 		# Delete nucleus node # TODO checkbox
-		_nucleus = c.ls(type='nucleus')
+		_nucleus = c.ls(type = 'nucleus')
 		if (len(_nucleus) > 0):
 			c.delete(_nucleus)
 		# Select cached objects
@@ -437,7 +436,7 @@ class OVLP:
 		# except:
 		# 	pass
 		if (deselect):
-			c.select(cl=1)
+			c.select(cl = 1)
 
 	def _ScanObjectsFromScene(self, *args):
 		# Check overlappy group
@@ -473,7 +472,7 @@ class OVLP:
 			self.locGoalTarget[1] = OVLP.nameLocGoalTarget[1] + objectName
 		if (c.objExists(OVLP.nameParticle + objectName)):
 			self.particle = OVLP.nameParticle + objectName
-		_nucleus = c.ls(type='nucleus')
+		_nucleus = c.ls(type = 'nucleus')
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
 			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
@@ -505,7 +504,7 @@ class OVLP:
 		c.setAttr(_goalAttributes[1], values[1])
 		c.setAttr(_goalAttributes[2], values[2])
 		# Get offset
-		_goalPosition = c.xform(self.locGoalTarget[0], q=1, t=1)
+		_goalPosition = c.xform(self.locGoalTarget[0], q = 1, t = 1)
 		_goalOffset = [0, 0, 0]
 		_goalOffset[0] = self.startPositionGoalParticle[0][0] - _goalPosition[0]
 		_goalOffset[1] = self.startPositionGoalParticle[0][1] - _goalPosition[1]
@@ -528,7 +527,7 @@ class OVLP:
 	def _Select(self, name="", *args):
 		if (name != ""):
 			if (c.objExists(name)):
-				c.select(name, r=1)
+				c.select(name, r = 1)
 			else: c.warning("'{0}' object doesn't exists".format(name))
 		else: c.warning("Can't select 'None'")
 	def _SelectObjects(self, *args):
@@ -620,7 +619,7 @@ class OVLP:
 			c.setAttr(_locator + "Shape.localScaleY", _scale)
 			c.setAttr(_locator + "Shape.localScaleZ", _scale)
 			_locators.append(_locator)
-		c.select(_locators, r=1) # Bake and cleanup
+		c.select(_locators, r = 1) # Bake and cleanup
 		OVLP.BakeSelected()
 		for loc in _locators:
 			_children = c.listRelatives(loc, type = "constraint")
@@ -645,12 +644,19 @@ class OVLP:
 			return
 		_name = "MotionTrail_1"
 		_step = 1
-		_start = c.playbackOptions(q=1, min=1)
-		_end = c.playbackOptions(q=1, max=1)
+		_start = c.playbackOptions(q = 1, min = 1)
+		_end = c.playbackOptions(q = 1, max = 1)
 		c.snapshot(n = _name, mt = 1, i = _step, st = _start, et = _end)
 		_trails = c.ls(type = "motionTrail")
 		for item in _trails:
 			c.setAttr(item + "Handle" + "Shape.trailDrawMode", 1)
+			c.setAttr(item + "Handle" + "Shape.template", 1)
+	def _MotionTrailSelect(self, *args):
+		_trails = c.ls(type = "motionTrail")
+		if (len(_trails) == 0): return
+		c.select(clear = 1)
+		for item in _trails:
+			c.select(item + "Handle", add = 1)
 	def _MotionTrailDelete(self, *args):
 		_trails = c.ls(type = "motionTrail")
 		if (len(_trails) == 0): return
