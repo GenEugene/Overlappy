@@ -67,6 +67,10 @@ class OVLP:
 	cDarkGray = (.3, .3, .3)
 	cBlack = (.15, .15, .15)
 
+	# TECHNICAL
+	attrT = ["translateX", "translateY", "translateZ"]
+	attrR = ["rotateX", "rotateY", "rotateZ"]
+
 	def __init__(self):
 		# OBJECTS
 		self.selected = ""
@@ -75,7 +79,6 @@ class OVLP:
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
-		# self.bake = [""]
 		# READONLY
 		self.startPositionGoalParticle = [None, None]
 		# self.timeCurrent = 0
@@ -137,10 +140,10 @@ class OVLP:
 		frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		#
 		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
-		ccBakeTranslation = self._BakeTranslation
-		ccBakeRotation = self._BakeTranslation
+		ccBakeTranslation = self._BakeToTranslation
+		ccBakeRotation = self._BakeToRotation
 		c.button(l = "TO TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cOrange)
-		c.button(l = "TO ROTATION", c = ccBakeTranslation, bgc = OVLP.cOrange, en = 0)
+		c.button(l = "TO ROTATION", c = ccBakeRotation, bgc = OVLP.cOrange)
 		#
 		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
@@ -226,6 +229,8 @@ class OVLP:
 				return self.valueCached
 			def ValueCachedSet(self, *args):
 				self.valueCached = c.floatSliderGrp(self._slider, q = 1, v = 1)
+			def ValueCachedReset(self, *args):
+				self.valueCached = 0
 
 		# SIMULATION SETTINGS
 		layoutSliders = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
@@ -311,7 +316,7 @@ class OVLP:
 		c.group(em = 1, n = OVLP.nameGroup)
 		# Run setup logic
 		self._SetupCreate(self.selected)
-		self._OffsetUpdate()
+		self._OffsetUpdate(cacheReset = True)
 		c.select(self.selected, r = 1)
 	def _SetupCreate(self, objCurrent, *args):
 		# Names
@@ -414,13 +419,12 @@ class OVLP:
 		if (self._LoftGetDistance() < OVLP.loftMinDistance):
 			c.setAttr(self.loft[2] + ".visibility", 0)
 	def _SetupDelete(self, deselect=True, *args):
-		# _selected = self.selected
 		self.selected = ""
-		self.locAim[2] = ""
-		self.locGoalTarget[0] = ""
-		self.locGoalTarget[1] = ""
+		self.locGoalTarget = ["", ""]
+		self.locAim = ["", "", ""]
 		self.particle = ""
 		self.nucleus = ""
+		self.loft = ["", "", ""]
 		# Revert cached timeslider
 		# if (self.simulated):
 		# 	self.simulated = False
@@ -478,8 +482,12 @@ class OVLP:
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
 			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
-	def _OffsetUpdate(self, *args):
-		# Check cached value
+	def _OffsetUpdate(self, *args, cacheReset=False):
+		if (cacheReset):
+			self.sliderOffsetX.ValueCachedReset()
+			self.sliderOffsetY.ValueCachedReset()
+			self.sliderOffsetZ.ValueCachedReset()
+		# Check and set cached value
 		checkX = self.sliderOffsetX.ValueCachedGet() != self.sliderOffsetX.ValueCheck()
 		checkY = self.sliderOffsetY.ValueCachedGet() != self.sliderOffsetY.ValueCheck()
 		checkZ = self.sliderOffsetZ.ValueCachedGet() != self.sliderOffsetZ.ValueCheck()
@@ -494,7 +502,8 @@ class OVLP:
 		_checkSelected = self.selected == "" or not c.objExists(self.selected)
 		_checkGoal = not c.objExists(self.locGoalTarget[0])
 		_checkAim = not c.objExists(self.locAim[2])
-		if (_checkSelected or _checkGoal or _checkAim): return
+		_checkStartPos = self.startPositionGoalParticle == [None, None]
+		if (_checkSelected or _checkGoal or _checkAim or _checkStartPos): return
 
 		c.currentTime(self.time[0])
 		# Get values from sliders
@@ -609,26 +618,29 @@ class OVLP:
 		self._ValuesSetOffset()
 	
 	### BAKE
-	def _BakeTranslation(self, *args):
-		_attributesT = ["translateX", "translateY", "translateZ"]
-		_attributesR = ["rotateX", "rotateY", "rotateZ"]
-
+	def _BakeTo(self, parent, translation=True, *args): # TODO check exceptions
+		if (self.selected == ""): return
+		if (translation): _attributes = OVLP.attrT
+		else: _attributes = OVLP.attrR
 		c.currentTime(self.time[0])
-		_selected = c.ls(sl = 1) # Get selected objects
-		_name = "_rebake_" + self.ConvertText(_selected[0])
-		_clone = c.duplicate(_selected[0], name = _name, parentOnly = 1, transformsOnly = 1, smartTransform = 1, returnRootsOnly = 1)
-		c.parentConstraint(self.locGoalTarget[1], _clone, maintainOffset = True)
+		_item = self.selected
+		_name = "_rebake_" + self.ConvertText(_item)
+		_clone = c.duplicate(_item, name = _name, parentOnly = 1, transformsOnly = 1, smartTransform = 1, returnRootsOnly = 1)
+		c.parentConstraint(parent, _clone, maintainOffset = True)
+		c.select(_clone, r = 1)
 		# Bake
 		OVLP.BakeSelected()
 		_children = c.listRelatives(_clone, type = "constraint")
-		for child in _children:
-			c.delete(child)
+		for child in _children: c.delete(child)
 		# Copy/Paste keys
-		c.copyKey(_clone, attribute = _attributesT)
-		c.pasteKey(_selected[0], option = "replace", attribute = _attributesT)
+		c.copyKey(_clone, attribute = _attributes) # TODO filtered attributes
+		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
 		c.delete(_clone)
 		self._SetupDelete()
-
+	def _BakeToTranslation(self, *args):
+		self._BakeTo(self.locGoalTarget[1], True)
+	def _BakeToRotation(self, *args):
+		self._BakeTo(self.locAim[2], False)
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
