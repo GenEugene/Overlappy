@@ -24,8 +24,11 @@ https://www.artstation.com/geneugene
 # v0.2.0 - in progress...
     - [GENERAL] full code reconstruction
 	- [NEW] main setup logic
-	- [NEW] scan overlappy objects in opened scene
-	- more notes coming soon...
+	- [NEW] simulation sliders (particle, nucleus)
+	- [NEW] offset goal
+	- [NEW] scan overlappy objects in current scene
+	- [NEW] bake selected objects to world locators
+	- [DEV] motion trail
 
 # v0.1.1
     - [FIX] updated for Maya 2020-2022

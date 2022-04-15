@@ -8,7 +8,7 @@ from math import pow, sqrt
 # import maya.mel as mel
 
 class OVLP:
-	devTools = False
+	devTools = True
 	# NAMING
 	textTitle = "Overlappy v0.2.0"
 	nameWindow = "__OverlappyWindow__"
@@ -106,13 +106,6 @@ class OVLP:
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.SceneReload)
 		c.menu(label = 'Script')
 		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
-
-		if (OVLP.devTools):
-			# DEV TOOLS
-			frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
-			ccDEVFunction = self._DEVFunction
-			c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameDev)
-			c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
 		
 		# BUTTONS
 		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
@@ -145,16 +138,17 @@ class OVLP:
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameBaking)
 		c.button(l = "TO TRANSLATION", bgc = OVLP.cOrange, en=0)
 		c.button(l = "TO ROTATION", bgc = OVLP.cOrange, en=0)
-		# c.button(l = "TARGET", bgc = OVLP.cOrange, en=0)
-		# c.button(l = "AIM", bgc = OVLP.cOrange, en=0)
-		# c.button(l = "SELECTED", bgc = OVLP.cOrange, en=0)
-		# c.button(l = "LAYER", bgc = OVLP.cOrange, en=0)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameBaking)
 		ccBakeToWorldLoc = self._BakeToWorldLocator
 		c.button(l = "TO WORLD LOCATOR", c = ccBakeToWorldLoc, bgc = OVLP.cOrange)
-		c.button(l = "FROM => TO", bgc = OVLP.cOrange, en=0)
+		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en=0)
 
-		# SLIDERS
+		# OPTIONS
+		# frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+		# c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight), p = frameOptions)
+		# c.button(l = "", bgc = OVLP.cWhite, en=0)
+
+		# SLIDER CLASS
 		class classSlider:
 			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="", precision=3, submenuReset=True, submenuGet=True):
 				self._attribute = attribute
@@ -251,9 +245,20 @@ class OVLP:
 		ccResetValuesOffset = self._ResetOffset
 		c.button(l = "RESET", c = ccResetValuesOffset, bgc = OVLP.cYellow)
 		c.columnLayout(p = layoutOffset)
-		self.sliderOffsetX = classSlider("        X", "", "", False, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
-		self.sliderOffsetY = classSlider("        Y", "", "", False, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
-		self.sliderOffsetZ = classSlider("        Z", "", "", False, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+		self.sliderOffsetX = classSlider("   Local X", "", "", False, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+		self.sliderOffsetY = classSlider("   Local Y", "", "", False, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+		self.sliderOffsetZ = classSlider("   Local Z", "", "", False, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+
+		# DEV TOOLS
+		if (OVLP.devTools):
+			frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, collapsable = 1, borderVisible = 1, cc = self.Resize_UI, bgc = OVLP.cBlack)
+			ccDEVFunction = self._DEVFunction
+			ccMotionTrailDelete = self._MotionTrailDelete
+			ccMotionTrailCreate = self._MotionTrailCreate
+			c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight), p = frameDev)
+			c.button(l = "MOTION TRAIL DELETE", c = ccMotionTrailDelete, bgc = OVLP.cBlack)
+			c.button(l = "MOTION TRAIL CREATE", c = ccMotionTrailCreate, bgc = OVLP.cBlack)
+			c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
 
 		# RUN WINDOW
 		c.showWindow(OVLP.nameWindow)
@@ -633,6 +638,25 @@ class OVLP:
 	def _DEVFunction(self, *args):
 		print("DEV Function")
 	
+	def _MotionTrailCreate(self, *args):
+		_selected = c.ls(sl = 1) # Get selected objects
+		if (len(_selected) == 0):
+			c.warning("Need to select at least 1 object")
+			return
+		_name = "MotionTrail_1"
+		_step = 1
+		_start = c.playbackOptions(q=1, min=1)
+		_end = c.playbackOptions(q=1, max=1)
+		c.snapshot(n = _name, mt = 1, i = _step, st = _start, et = _end)
+		_trails = c.ls(type = "motionTrail")
+		for item in _trails:
+			c.setAttr(item + "Handle" + "Shape.trailDrawMode", 1)
+	def _MotionTrailDelete(self, *args):
+		_trails = c.ls(type = "motionTrail")
+		if (len(_trails) == 0): return
+		for item in _trails:
+			c.delete(item + "Handle")
+
 	### EXECUTION
 	def Start(self, *args):
 		_OVERLAPPY.CreateUI()
