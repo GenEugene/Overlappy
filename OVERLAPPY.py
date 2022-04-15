@@ -112,8 +112,8 @@ class OVLP:
 		# SETUP
 		c.gridLayout(p = frameButtons, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight))
 		ccResetSliders = self._ResetAll
-		ccDeleteSetup = self._DeleteSetup
-		ccInitSetup = self._InitSetup
+		ccDeleteSetup = self._SetupDelete
+		ccInitSetup = self._SetupInit
 		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
 		c.button(l = "DELETE SETUP", c = ccDeleteSetup, bgc = OVLP.cRed)
 		c.button(l = "CREATE SETUP", c = ccInitSetup, bgc = OVLP.cGreen)
@@ -137,8 +137,10 @@ class OVLP:
 		frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		#
 		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
-		c.button(l = "TO TRANSLATION", bgc = OVLP.cOrange, en = 0)
-		c.button(l = "TO ROTATION", bgc = OVLP.cOrange, en = 0)
+		ccBakeTranslation = self._BakeTranslation
+		ccBakeRotation = self._BakeTranslation
+		c.button(l = "TO TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cOrange)
+		c.button(l = "TO ROTATION", c = ccBakeTranslation, bgc = OVLP.cOrange, en = 0)
 		#
 		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
@@ -287,8 +289,8 @@ class OVLP:
 			return _text
 
 	### LOGIC
-	def _InitSetup(self, *args):
-		self._DeleteSetup(False)
+	def _SetupInit(self, *args):
+		self._SetupDelete(False)
 		# Get selected objects
 		self.selected = c.ls(sl = 1)
 		if (len(self.selected) == 0):
@@ -308,10 +310,10 @@ class OVLP:
 			c.delete(OVLP.nameGroup)
 		c.group(em = 1, n = OVLP.nameGroup)
 		# Run setup logic
-		self._CreateSetup(self.selected)
+		self._SetupCreate(self.selected)
 		self._OffsetUpdate()
 		c.select(self.selected, r = 1)
-	def _CreateSetup(self, objCurrent, *args):
+	def _SetupCreate(self, objCurrent, *args):
 		# Names
 		_objConverted = self.ConvertText(objCurrent)
 		nameLocGoal = OVLP.nameLocGoalTarget[0] + _objConverted
@@ -411,7 +413,7 @@ class OVLP:
 		c.setAttr(self.loft[2] + ".overrideShading", 0)
 		if (self._LoftGetDistance() < OVLP.loftMinDistance):
 			c.setAttr(self.loft[2] + ".visibility", 0)
-	def _DeleteSetup(self, deselect=True, *args):
+	def _SetupDelete(self, deselect=True, *args):
 		# _selected = self.selected
 		self.selected = ""
 		self.locAim[2] = ""
@@ -488,7 +490,12 @@ class OVLP:
 		else: return
 
 		self._ValuesSetOffset()
-		if (self.selected == ""): return
+
+		_checkSelected = self.selected == "" or not c.objExists(self.selected)
+		_checkGoal = not c.objExists(self.locGoalTarget[0])
+		_checkAim = not c.objExists(self.locAim[2])
+		if (_checkSelected or _checkGoal or _checkAim): return
+
 		c.currentTime(self.time[0])
 		# Get values from sliders
 		values = [0, 0, 0]
@@ -602,6 +609,26 @@ class OVLP:
 		self._ValuesSetOffset()
 	
 	### BAKE
+	def _BakeTranslation(self, *args):
+		_attributesT = ["translateX", "translateY", "translateZ"]
+		_attributesR = ["rotateX", "rotateY", "rotateZ"]
+
+		c.currentTime(self.time[0])
+		_selected = c.ls(sl = 1) # Get selected objects
+		_name = "_rebake_" + self.ConvertText(_selected[0])
+		_clone = c.duplicate(_selected[0], name = _name, parentOnly = 1, transformsOnly = 1, smartTransform = 1, returnRootsOnly = 1)
+		c.parentConstraint(self.locGoalTarget[1], _clone, maintainOffset = True)
+		# Bake
+		OVLP.BakeSelected()
+		_children = c.listRelatives(_clone, type = "constraint")
+		for child in _children:
+			c.delete(child)
+		# Copy/Paste keys
+		c.copyKey(_clone, attribute = _attributesT)
+		c.pasteKey(_selected[0], option = "replace", attribute = _attributesT)
+		c.delete(_clone)
+		self._SetupDelete()
+
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
@@ -626,7 +653,6 @@ class OVLP:
 			for child in _children:
 				c.delete(child)
 
-	### OTHER
 	@staticmethod
 	def BakeSelected(DoNotCut=1): # TODO from GETools class (need to merge in future)
 		_startTime = c.playbackOptions(q = 1, min = 1)
