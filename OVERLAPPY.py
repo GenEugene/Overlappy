@@ -67,11 +67,14 @@ class OVLP:
 	cDarkGray = (.3, .3, .3)
 	cBlack = (.15, .15, .15)
 
-	# TECHNICAL
+	# CONSTANTS
 	attrT = ["translateX", "translateY", "translateZ"]
 	attrR = ["rotateX", "rotateY", "rotateZ"]
 
 	def __init__(self):
+		# VALUES
+		self.time = [0, 0, 0] # min, max, current
+		self.startPositionGoalParticle = [None, (0, 0, 0)]
 		# OBJECTS
 		self.selected = ""
 		self.locGoalTarget = ["", ""]
@@ -79,10 +82,6 @@ class OVLP:
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
-		# READONLY
-		self.startPositionGoalParticle = [None, None]
-		# self.timeCurrent = 0
-		self.time = [0, 0]
 		# UI
 		self.layoutMain = None
 		self.sliderPRadius = None
@@ -156,7 +155,7 @@ class OVLP:
 		# c.button(l = "", bgc = OVLP.cWhite, en = 0)
 
 		# SLIDER CLASS
-		class classSlider:
+		class classSlider: # TODO need refactoring
 			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="", precision=3, submenuReset=True, submenuGet=True):
 				self._attribute = attribute
 				self._name = name
@@ -186,6 +185,7 @@ class OVLP:
 					firstName = self._name
 				# Get attribute
 				try:
+					# print(firstName + self._attribute)
 					_value = c.getAttr(firstName + self._attribute)
 					c.floatSliderGrp(self._slider, e = 1, v = _value)
 				except:
@@ -235,10 +235,10 @@ class OVLP:
 		# SIMULATION SETTINGS
 		layoutSliders = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
-		ccResetValuesSimulation = self._ResetSimulation
-		ccGetValuesSimulation = self._GetSimulation
-		c.button(l = "RESET", c = ccResetValuesSimulation, bgc = OVLP.cYellow)
-		c.button(l = "GET", c = ccGetValuesSimulation, bgc = OVLP.cGray)
+		ccResetSimulation = self._ResetSimulation
+		ccGetSimulation = self._GetSimulation
+		c.button(l = "RESET", c = ccResetSimulation, bgc = OVLP.cYellow)
+		c.button(l = "GET", c = ccGetSimulation, bgc = OVLP.cGray)
 		c.columnLayout(p = layoutSliders)
 		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], layoutSliders, self._ValuesSetSimulation)
 		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], layoutSliders, self._ValuesSetSimulation)
@@ -251,12 +251,14 @@ class OVLP:
 		# OFFSET SETTINGS
 		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
-		ccResetValuesOffset = self._ResetOffset
-		c.button(l = "RESET", c = ccResetValuesOffset, bgc = OVLP.cYellow)
+		ccResetOffset = self._ResetOffset
+		ccGetOffset = self._GetOffsets
+		c.button(l = "RESET", c = ccResetOffset, bgc = OVLP.cYellow)
+		c.button(l = "GET", c = ccGetOffset, bgc = OVLP.cGray)
 		c.columnLayout(p = layoutOffset)
-		self.sliderOffsetX = classSlider("   Local X", "", "", False, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
-		self.sliderOffsetY = classSlider("   Local Y", "", "", False, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
-		self.sliderOffsetZ = classSlider("   Local Z", "", "", False, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate, submenuGet=False)
+		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate, submenuGet = 1)
+		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate, submenuGet = 1)
+		self.sliderOffsetZ = classSlider("   Local Z", "_parentConstraint1.target[0].targetOffsetTranslateZ", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate, submenuGet = 1)
 
 		# DEV TOOLS
 		if (OVLP.devTools):
@@ -292,6 +294,16 @@ class OVLP:
 			_text = text.replace(OVLP.replaceSymbols[0], "|")
 			_text = _text.replace(OVLP.replaceSymbols[1], ":")
 			return _text
+	
+	def TimeRangeGet(self, *args):
+		self.time[0] = c.playbackOptions(q = 1, min = 1)
+		self.time[1] = c.playbackOptions(q = 1, max = 1)
+		self.time[2] = c.currentTime(q = 1)
+		# c.playbackOptions(e = 1, min = self.time[0], max = self.time[1])
+	def TimeRangeMin(self, *args):
+		c.currentTime(self.time[0])
+	def TimeRangeCached(self, *args):
+		c.currentTime(self.time[2])
 
 	### LOGIC
 	def _SetupInit(self, *args):
@@ -304,11 +316,8 @@ class OVLP:
 			return
 		self.selected = self.selected[0]
 		# Get min/max anim range time and reset time slider
-		# self.timeCurrent = c.currentTime(q=1)
-		self.time[0] = c.playbackOptions(q = 1, min = 1)
-		self.time[1] = c.playbackOptions(q = 1, max = 1)
-		c.playbackOptions(e = 1, min = self.time[0], max = self.time[1])
-		c.currentTime(self.time[0])
+		self.TimeRangeGet()
+		self.TimeRangeMin()
 		# Create group
 		c.select(cl = 1)
 		if (c.objExists(OVLP.nameGroup)):
@@ -344,7 +353,7 @@ class OVLP:
 		self.particle = c.nParticle(n = nameParticle, position = _position, conserve = 1)[0]
 		c.goal(useTransformAsGoal = 1, goal = self.locGoalTarget[0])
 		c.parent(self.particle, OVLP.nameGroup)
-		self.startPositionGoalParticle[1] = c.xform(self.particle, q = 1, t = 1)
+		# self.startPositionGoalParticle[1] = c.xform(self.particle, q = 1, t = 1)
 		c.setAttr(self.particle + ".overrideEnabled", 1)
 		c.setAttr(self.particle + ".overrideDisplayType", 2)
 
@@ -470,18 +479,36 @@ class OVLP:
 		_converted = self.ConvertText(objectName, False)
 		if (c.objExists(_converted)):
 			self.selected = _converted
-		if (c.objExists(OVLP.nameLocAim[2] + objectName)):
-			self.locAim[2] = OVLP.nameLocAim[2] + objectName
-		if (c.objExists(OVLP.nameLocGoalTarget[0] + objectName)):
-			self.locGoalTarget[0] = OVLP.nameLocGoalTarget[0] + objectName
-		if (c.objExists(OVLP.nameLocGoalTarget[1] + objectName)):
-			self.locGoalTarget[1] = OVLP.nameLocGoalTarget[1] + objectName
-		if (c.objExists(OVLP.nameParticle + objectName)):
-			self.particle = OVLP.nameParticle + objectName
+		
+		def CheckAndSet(name):
+			if (c.objExists(name + objectName)):
+				return name + objectName
+			else: return
+		# Objects
+		self.locGoalTarget[0] = CheckAndSet(OVLP.nameLocGoalTarget[0])
+		self.locGoalTarget[1] = CheckAndSet(OVLP.nameLocGoalTarget[1])
+		self.locAim[0] = CheckAndSet(OVLP.nameLocAim[0])
+		self.locAim[1] = CheckAndSet(OVLP.nameLocAim[1])
+		self.locAim[2] = CheckAndSet(OVLP.nameLocAim[2])
+		self.particle = CheckAndSet(OVLP.nameParticle)
+		self.loft[0] = CheckAndSet(OVLP.nameLoft[0])
+		self.loft[1] = CheckAndSet(OVLP.nameLoft[1])
+		self.loft[2] = CheckAndSet(OVLP.nameLoft[2])
+		# Time and offset
+		self.TimeRangeGet()
+		self.TimeRangeMin()
+		self.startPositionGoalParticle[0] = c.xform(self.locAim[0], q = 1, t = 1) 
+		self.TimeRangeCached()
+		# Nucleus
 		_nucleus = c.ls(type = 'nucleus')
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
 			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
+		# Get sliders
+		self.sliderPRadius.ValueGet()
+		self._GetSimulation()
+		self._GetOffsets()
+
 	def _OffsetUpdate(self, *args, cacheReset=False):
 		if (cacheReset):
 			self.sliderOffsetX.ValueCachedReset()
@@ -502,7 +529,7 @@ class OVLP:
 		_checkSelected = self.selected == "" or not c.objExists(self.selected)
 		_checkGoal = not c.objExists(self.locGoalTarget[0])
 		_checkAim = not c.objExists(self.locAim[2])
-		_checkStartPos = self.startPositionGoalParticle == [None, None]
+		_checkStartPos = self.startPositionGoalParticle[0] == None
 		if (_checkSelected or _checkGoal or _checkAim or _checkStartPos): return
 
 		c.currentTime(self.time[0])
@@ -598,6 +625,10 @@ class OVLP:
 		self.sliderGSmooth.ValueGet()
 		self.sliderGWeight.ValueGet()
 		self.sliderNTimeScale.ValueGet()
+	def _GetOffsets(self, *args):
+		self.sliderOffsetX.ValueGet()
+		self.sliderOffsetY.ValueGet()
+		self.sliderOffsetZ.ValueGet()
 	
 	def _ResetAll(self, *args):
 		self.sliderPRadius.ValueReset()
