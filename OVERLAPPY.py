@@ -21,18 +21,15 @@ class OVLP:
 	nameBakedWorldLocator = ("BakedWorldLocator_")
 	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
-
 	# WINDOW
 	windowWidth = 330
 	windowHeight = 27
 	lineHeight = 30
 	sliderWidth = (60, 60, 10)
 	markerWidth = 6
-
 	# LOFT
 	loftFactor = 0.9
 	loftMinDistance = 5
-
 	# SIMULATION SETTINGS # TODO: move to preset
 	particleRadius = 20
 	particleConserve = 1
@@ -41,7 +38,6 @@ class OVLP:
 	goalSmooth = 3
 	goalWeight = 0.5
 	nucleusTimeScale = 1
-	
 	# SLIDERS (field min/max, slider min/max)
 	rangePRadius = (0, float("inf"), 0, 40)
 	rangePConserve = (0, 1, 0, 1)
@@ -53,7 +49,6 @@ class OVLP:
 	rangeOffsetX = (float("-inf"), float("inf"), -100, 100)
 	rangeOffsetY = (float("-inf"), float("inf"), -100, 100)
 	rangeOffsetZ = (float("-inf"), float("inf"), -100, 100)
-
 	# COLORS
 	cLRed = (1, .7, .7)
 	cRed = (1, .5, .5)
@@ -68,7 +63,6 @@ class OVLP:
 	cGray = (.5, .5, .5)
 	cDarkGray = (.3, .3, .3)
 	cBlack = (.15, .15, .15)
-
 	# CONSTANTS
 	attrT = ["translateX", "translateY", "translateZ"]
 	attrR = ["rotateX", "rotateY", "rotateZ"]
@@ -86,9 +80,11 @@ class OVLP:
 		self.nucleus = ""
 		self.loft = ["", "", ""]
 		# LAYOUTS
+		self.windowMain = None
 		self.layoutMain = None
 		self.layoutButtons = None
 		self.layoutBaking = None
+		self.layoutOptions = None
 		self.layoutSimulation = None
 		self.layoutOffset = None
 		self.layoutDevTools = None
@@ -109,7 +105,7 @@ class OVLP:
 		# WINDOW
 		if c.window(OVLP.nameWindowMain, exists = True):
 			c.deleteUI(OVLP.nameWindowMain)
-		c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = 1, widthHeight = (OVLP.windowWidth, OVLP.windowHeight), closeCommand = self.Cleanup)
+		self.windowMain = c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = 1, widthHeight = (OVLP.windowWidth, OVLP.windowHeight * 6), closeCommand = self.Cleanup)
 		self.layoutMain = c.columnLayout(adj = True, h = OVLP.windowHeight)
 
 		# HEAD MENU
@@ -139,7 +135,7 @@ class OVLP:
 		def LinkYoutube(self): c.showHelp("https://www.youtube.com/channel/UCCIzdVu6RMqUoOmxHoOEPAQ", absolute = True)
 		def LinkReport(self): c.showHelp("https://github.com/GenEugene/Overlappy/discussions/categories/report-a-problem", absolute = True)
 		c.menu(label = "Help")
-		# c.menuItem(label = "About Overlappy") # TODO
+		# c.menuItem(label = "About Overlappy") # TODO add window with information
 		c.menuItem(dividerLabel = "Links", divider = 1)
 		c.menuItem(label = "GitHub", c = LinkGithub)
 		c.menuItem(label = "YouTube", c = LinkYoutube)
@@ -147,7 +143,7 @@ class OVLP:
 		c.menuItem(label = "Report a Problem...", c = LinkReport)
 		
 		# BUTTONS
-		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		# SETUP
 		c.gridLayout(p = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		ccResetAllValues = self._ResetAllValues
@@ -172,14 +168,14 @@ class OVLP:
 		c.button(l = "AIM", c = ccSelectAim, bgc = OVLP.cLBlue)
 
 		# BAKING
-		self.layoutBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		self.layoutBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		#
-		c.gridLayout(p = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
+		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeTranslation = self._BakeToTranslation
-		ccBakeTranslationOffset = self._BakeToTranslationOffset
+		# ccBakeTranslationOffset = self._BakeToTranslationOffset
 		ccBakeRotation = self._BakeToRotation
 		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
-		c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
+		# c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
@@ -188,11 +184,11 @@ class OVLP:
 		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en = 0)
 
 		# OPTIONS
-		frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		c.gridLayout(p = frameOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
+		self.layoutOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		c.gridLayout(p = self.layoutOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
 		self.checkboxCleanup = c.checkBox(l = "Cleanup", v = 1)
-		# c.checkBox(l = "To Layer", v = 1)
-		# c.checkBox(l = "Loop")
+		c.checkBox(l = "To Layer", v = 1, en = 0)
+		c.checkBox(l = "Loop", en = 0)
 		# c.checkBox(l = "Label")
 		# c.checkBox(l = "Label")
 		# c.radioButton(l = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
@@ -280,7 +276,7 @@ class OVLP:
 				self.valueCached = 0
 
 		# SIMULATION SETTINGS
-		self.layoutSimulation = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		self.layoutSimulation = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccResetSimulation = self._ResetSimulation
 		ccGetSimulation = self._GetSimulation
@@ -296,7 +292,7 @@ class OVLP:
 		self.sliderNTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, OVLP.rangeNTimeScale[0], OVLP.rangeNTimeScale[1], OVLP.rangeNTimeScale[2], OVLP.rangeNTimeScale[3], self.layoutSimulation, self._ValuesSetSimulation)
 		
 		# OFFSET SETTINGS
-		self.layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		self.layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccResetOffset = self._ResetOffset
 		ccGetOffset = self._GetOffsets
@@ -308,7 +304,7 @@ class OVLP:
 		self.sliderOffsetZ = classSlider("   Local Z", "_parentConstraint1.target[0].targetOffsetTranslateZ", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], self.layoutOffset, self._OffsetUpdate, submenuGet = 1)
 
 		# DEV TOOLS
-		self.layoutDevTools = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack, vis = False)
+		self.layoutDevTools = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack, vis = False)
 		ccDEVFunction = self._DEVFunction
 		ccTrailDelete = self._MotionTrailDelete
 		ccTrailSelect = self._MotionTrailSelect
@@ -320,10 +316,10 @@ class OVLP:
 		c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
 
 		# RUN WINDOW
-		c.showWindow(OVLP.nameWindowMain)
+		c.showWindow(self.windowMain)
 		self.Resize_UI()
-	def Resize_UI(self, *args):
-		c.window(OVLP.nameWindowMain, e = 1, height = OVLP.windowHeight * 5, resizeToFitChildren = 1)
+	def Resize_UI(self, *args): # TODO get count of visible layouts
+		c.window(self.windowMain, e = 1, height = OVLP.windowHeight * 6, resizeToFitChildren = 1)
 	
 	def LayoutsCollapseLogic(self, value, *args): # TODO to external class
 		if (value):
@@ -334,6 +330,7 @@ class OVLP:
 				return
 		c.frameLayout(self.layoutButtons, e = 1, collapse = value)
 		c.frameLayout(self.layoutBaking, e = 1, collapse = value)
+		c.frameLayout(self.layoutOptions, e = 1, collapse = value)
 		c.frameLayout(self.layoutSimulation, e = 1, collapse = value)
 		c.frameLayout(self.layoutOffset, e = 1, collapse = value)
 		c.frameLayout(self.layoutDevTools, e = 1, collapse = value)
@@ -341,10 +338,11 @@ class OVLP:
 	def LayoutsCollapseCheck(self, *args): # needed to fix the window bug
 		check1 = c.frameLayout(self.layoutButtons, q = 1, collapse = 1)
 		check2 = c.frameLayout(self.layoutBaking, q = 1, collapse = 1)
-		check3 = c.frameLayout(self.layoutSimulation, q = 1, collapse = 1)
-		check4 = c.frameLayout(self.layoutOffset, q = 1, collapse = 1)
-		check5 = c.frameLayout(self.layoutDevTools, q = 1, collapse = 1)
-		if (check1 == check2 == check3 == check4 == check5):
+		check3 = c.frameLayout(self.layoutOptions, q = 1, collapse = 1)
+		check4 = c.frameLayout(self.layoutSimulation, q = 1, collapse = 1)
+		check5 = c.frameLayout(self.layoutOffset, q = 1, collapse = 1)
+		check6 = c.frameLayout(self.layoutDevTools, q = 1, collapse = 1)
+		if (check1 == check2 == check3 == check4 == check5 == check6):
 			return check1
 	def LayoutsExpand(self, *args):
 		self.LayoutsCollapseLogic(False)
@@ -446,11 +444,11 @@ class OVLP:
 
 		# Nucleus detection
 		self.nucleus = c.ls(type = "nucleus")[0]
-		# c.parent(self.nucleus, OVLP.nameGroup) # TODO
+		# c.parent(self.nucleus, OVLP.nameGroup) # TODO try to move nucleus in group
 		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
-		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO
+		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO maybe need check start frame in other functions?
 		c.setAttr(self.nucleus + ".visibility", 0)
 
 		# Create and connect locator to particle
