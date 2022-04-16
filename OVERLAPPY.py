@@ -107,7 +107,7 @@ class OVLP:
 		# WINDOW
 		if c.window(OVLP.nameWindowMain, exists = True):
 			c.deleteUI(OVLP.nameWindowMain)
-		c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = 1, widthHeight = (OVLP.windowWidth, OVLP.windowHeight)) # TODO closeCommand
+		c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = 1, widthHeight = (OVLP.windowWidth, OVLP.windowHeight), closeCommand = self.Cleanup)
 		self.layoutMain = c.columnLayout(adj = True, h = OVLP.windowHeight)
 
 		# HEAD MENU
@@ -171,9 +171,10 @@ class OVLP:
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
 		ccBakeTranslation = self._BakeToTranslation
+		ccBakeTranslationOffset = self._BakeToTranslationOffset
 		ccBakeRotation = self._BakeToRotation
 		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
-		c.button(l = "OFFSET", c = ccBakeTranslation, bgc = OVLP.cLOrange)
+		c.button(l = "OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
@@ -736,6 +737,8 @@ class OVLP:
 		self._SetupDelete()
 	def _BakeToTranslation(self, *args):
 		self._BakeTo(self.locGoalTarget[1], True)
+	def _BakeToTranslationOffset(self, *args):
+		self._BakeTo(self.locGoalTarget[1], True)
 	def _BakeToRotation(self, *args):
 		self._BakeTo(self.locAim[2], False)
 	def _BakeToWorldLocator(self, *args):
@@ -803,6 +806,9 @@ class OVLP:
 		_OVERLAPPY.CreateUI()
 	def Restart(self, *args):
 		c.evalDeferred("_OVERLAPPY.Start()")
+	def Cleanup(self, *args):
+		c.evalDeferred("_OVERLAPPY = None")
+		c.evalDeferred("OVLP = None")
 
 _OVERLAPPY = OVLP()
 _OVERLAPPY.Start()
