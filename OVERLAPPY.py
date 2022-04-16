@@ -174,9 +174,17 @@ class OVLP:
 		ccBakeTranslation = self._BakeToTranslation
 		ccBakeTranslationOffset = self._BakeToTranslationOffset
 		ccBakeRotation = self._BakeToRotation
+		ccBakeCombo = self._BakeCombo
+		ccBakeCombo1 = self._BakeCombo1
+		ccBakeCombo2 = self._BakeCombo2
 		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
-		c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
+		c.popupMenu()
+		c.menuItem(l = "use offset", c = ccBakeTranslationOffset)
 		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
+		c.button(l = "COMBO", c = ccBakeCombo, bgc = OVLP.cLOrange)
+		c.popupMenu()
+		c.menuItem(l = "translate + rotate", c = ccBakeCombo1)
+		c.menuItem(l = "rotate + translate", c = ccBakeCombo2)
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
@@ -187,6 +195,8 @@ class OVLP:
 		self.layoutOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(p = self.layoutOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
 		self.checkboxCleanup = c.checkBox(l = "Cleanup", v = 1)
+		# c.popupMenu()
+		# c.menuItem(l = "reset")
 		c.checkBox(l = "To Layer", v = 1, en = 0)
 		c.checkBox(l = "Loop", en = 0)
 		# c.checkBox(l = "Label")
@@ -379,6 +389,12 @@ class OVLP:
 		c.currentTime(self.time[0])
 	def TimeRangeCached(self, *args): # TODO to external class
 		c.currentTime(self.time[2])
+
+	@staticmethod
+	def BakeSelected(DoNotCut=1): # TODO from GETools class (need to merge in future)
+		_startTime = c.playbackOptions(q = 1, min = 1)
+		_endTime = c.playbackOptions(q = 1, max = 1)
+		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = DoNotCut, simulation = 1)
 
 	### LOGIC
 	def _SetupInit(self, *args):
@@ -725,7 +741,7 @@ class OVLP:
 		self._ValuesSetOffset()
 	
 	### BAKE
-	def _BakeLogic(self, parent, translation=True, *args):
+	def _BakeLogic(self, parent, translation=True, setupDeleteLock=False, *args):
 		if (translation): _attributes = OVLP.attrT
 		else: _attributes = OVLP.attrR
 		c.currentTime(self.time[0])
@@ -743,7 +759,8 @@ class OVLP:
 		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
 		c.delete(_clone)
 		if (c.checkBox(self.checkboxCleanup, q = 1, v = 1)):
-			self._SetupDelete()
+			if (not setupDeleteLock):
+				self._SetupDelete()
 	def _BakeToTranslation(self, *args): # TODO merge repeated
 		_selected = c.ls(sl = 1)
 		if (len(_selected) == 0):
@@ -795,6 +812,46 @@ class OVLP:
 				self._SetupInit()
 				self._BakeLogic(self.locAim[2], False)
 			c.select(_selected, r = 1)
+	def _BakeCombo(self, *args): # TODO merge repeated
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			if (self.selected == ""): return
+			_iterations = 0
+		else: _iterations = len(_selected)
+		if (_iterations == 0):
+			_value1 = self.sliderOffsetX.ValueCheck()
+			_value2 = self.sliderOffsetY.ValueCheck()
+			_value3 = self.sliderOffsetZ.ValueCheck()
+			self.sliderOffsetX.ValueReset()
+			self.sliderOffsetY.ValueReset()
+			self.sliderOffsetZ.ValueReset()
+			self._BakeLogic(self.locGoalTarget[1], True, True)
+			self.sliderOffsetX.ValueSet(_value1)
+			self.sliderOffsetY.ValueSet(_value2)
+			self.sliderOffsetZ.ValueSet(_value3)
+			self._BakeLogic(self.locAim[2], False)
+		else:
+			for ii in range(_iterations):
+				c.select(_selected[ii], r = 1)
+				self._SetupInit()
+				_value1 = self.sliderOffsetX.ValueCheck()
+				_value2 = self.sliderOffsetY.ValueCheck()
+				_value3 = self.sliderOffsetZ.ValueCheck()
+				self.sliderOffsetX.ValueReset()
+				self.sliderOffsetY.ValueReset()
+				self.sliderOffsetZ.ValueReset()
+				self._BakeLogic(self.locGoalTarget[1], True, True)
+				self.sliderOffsetX.ValueSet(_value1)
+				self.sliderOffsetY.ValueSet(_value2)
+				self.sliderOffsetZ.ValueSet(_value3)
+				self._BakeLogic(self.locAim[2], False)
+			c.select(_selected, r = 1)
+	def _BakeCombo1(self, *args):
+		self._BakeToTranslation()
+		self._BakeToRotation()
+	def _BakeCombo2(self, *args):
+		self._BakeToRotation()
+		self._BakeToTranslation()
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
@@ -819,12 +876,6 @@ class OVLP:
 			for child in _children:
 				c.delete(child)
 
-	@staticmethod
-	def BakeSelected(DoNotCut=1): # TODO from GETools class (need to merge in future)
-		_startTime = c.playbackOptions(q = 1, min = 1)
-		_endTime = c.playbackOptions(q = 1, max = 1)
-		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = DoNotCut, simulation = 1)
-	
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
 		print("DEV Function")
