@@ -85,8 +85,16 @@ class OVLP:
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
-		# UI
+		# LAYOUTS
 		self.layoutMain = None
+		self.layoutButtons = None
+		self.layoutBaking = None
+		self.layoutSimulation = None
+		self.layoutOffset = None
+		self.layoutDevTools = None
+		# CHECKBOXES
+		self.checkboxCleanup = None
+		# SLIDERS
 		self.sliderPRadius = None
 		self.sliderPConserve = None
 		self.sliderPDrag = None
@@ -97,12 +105,6 @@ class OVLP:
 		self.sliderOffsetX = None
 		self.sliderOffsetY = None
 		self.sliderOffsetZ = None
-		#
-		self.layoutButtons = None
-		self.layoutBaking = None
-		self.layoutSimulation = None
-		self.layoutOffset = None
-		self.layoutDevTools = None
 	def CreateUI(self):
 		# WINDOW
 		if c.window(OVLP.nameWindowMain, exists = True):
@@ -174,7 +176,7 @@ class OVLP:
 		ccBakeTranslationOffset = self._BakeToTranslationOffset
 		ccBakeRotation = self._BakeToRotation
 		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
-		c.button(l = "OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
+		c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
@@ -183,11 +185,14 @@ class OVLP:
 		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en = 0)
 
 		# OPTIONS
-		# frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		# c.gridLayout(p = frameOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
-		# c.checkBox(l = "To layer", v = 1)
+		frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		c.gridLayout(p = frameOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
+		self.checkboxCleanup = c.checkBox(l = "Cleanup", v = 1)
+		# c.checkBox(l = "To Layer", v = 1)
 		# c.checkBox(l = "Loop")
-		# c.radioButton(l = "radio1", onCommand = "print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
+		# c.checkBox(l = "Label")
+		# c.checkBox(l = "Label")
+		# c.radioButton(l = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SLIDER CLASS
 		class classSlider: # TODO need refactoring
@@ -231,9 +236,13 @@ class OVLP:
 					c.button(self._marker, e = 1, bgc = self.markerColorChanged)
 				else:
 					c.button(self._marker, e = 1, bgc = self.markerColorDefault)
-			def ValueSet(self, *args):
+			def ValueSet(self, value=None, *args):
+				if (value == None): _value = c.floatSliderGrp(self._slider, q = 1, v = 1)
+				else:
+					_value = value
+					c.floatSliderGrp(self._slider, e = 1, v = _value)
+					self._ccCommand()
 				# Marker update
-				_value = c.floatSliderGrp(self._slider, q = 1, v = 1)
 				if (_value != self._value):
 					c.button(self._marker, e = 1, bgc = self.markerColorChanged)
 				else:
@@ -313,7 +322,7 @@ class OVLP:
 	def Resize_UI(self, *args):
 		c.window(OVLP.nameWindowMain, e = 1, height = OVLP.windowHeight * 5, resizeToFitChildren = 1)
 	
-	def LayoutsCollapseLogic(self, value, *args):
+	def LayoutsCollapseLogic(self, value, *args): # TODO to external class
 		if (value):
 			if (self.LayoutsCollapseCheck() == value):
 				return
@@ -334,8 +343,6 @@ class OVLP:
 		check5 = c.frameLayout(self.layoutDevTools, q = 1, collapse = 1)
 		if (check1 == check2 == check3 == check4 == check5):
 			return check1
-
-	
 	def LayoutsExpand(self, *args):
 		self.LayoutsCollapseLogic(False)
 	def LayoutsCollapse(self, *args):
@@ -345,11 +352,11 @@ class OVLP:
 		c.frameLayout(self.layoutDevTools, e = 1, vis = not _value)
 		self.Resize_UI()
 	
-	def SceneReload(self, *args):
+	def SceneReload(self, *args): # TODO to external class
 		currentScene = c.file(q = True, sceneName = True)
 		if(currentScene): c.file(currentScene, open = True, force = True)
 		else: c.file(new = 1, f = 1)
-	def SceneQuit(self, *args):
+	def SceneQuit(self, *args): # TODO to external class
 		c.quit(force = True)
 	
 	def ConvertText(self, text, direction=True, *args):
@@ -362,14 +369,14 @@ class OVLP:
 			_text = _text.replace(OVLP.replaceSymbols[1], ":")
 			return _text
 	
-	def TimeRangeGet(self, *args):
+	def TimeRangeGet(self, *args): # TODO to external class
+		# c.playbackOptions(e = 1, min = self.time[0], max = self.time[1])
 		self.time[0] = c.playbackOptions(q = 1, min = 1)
 		self.time[1] = c.playbackOptions(q = 1, max = 1)
 		self.time[2] = c.currentTime(q = 1)
-		# c.playbackOptions(e = 1, min = self.time[0], max = self.time[1])
-	def TimeRangeMin(self, *args):
+	def TimeRangeMin(self, *args): # TODO to external class
 		c.currentTime(self.time[0])
-	def TimeRangeCached(self, *args):
+	def TimeRangeCached(self, *args): # TODO to external class
 		c.currentTime(self.time[2])
 
 	### LOGIC
@@ -716,7 +723,7 @@ class OVLP:
 		self._ValuesSetOffset()
 	
 	### BAKE
-	def _BakeTo(self, parent, translation=True, *args):
+	def _BakeLogic(self, parent, translation=True, *args):
 		if (self.selected == ""): return
 		if (translation): _attributes = OVLP.attrT
 		else: _attributes = OVLP.attrR
@@ -734,13 +741,23 @@ class OVLP:
 		c.copyKey(_clone, attribute = _attributes) # TODO filtered attributes
 		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
 		c.delete(_clone)
-		self._SetupDelete()
+		if (c.checkBox(self.checkboxCleanup, q = 1, v = 1)):
+			self._SetupDelete()
 	def _BakeToTranslation(self, *args):
-		self._BakeTo(self.locGoalTarget[1], True)
+		_value1 = self.sliderOffsetX.ValueCheck()
+		_value2 = self.sliderOffsetY.ValueCheck()
+		_value3 = self.sliderOffsetZ.ValueCheck()
+		self.sliderOffsetX.ValueReset()
+		self.sliderOffsetY.ValueReset()
+		self.sliderOffsetZ.ValueReset()
+		self._BakeLogic(self.locGoalTarget[1], True)
+		self.sliderOffsetX.ValueSet(_value1)
+		self.sliderOffsetY.ValueSet(_value2)
+		self.sliderOffsetZ.ValueSet(_value3)
 	def _BakeToTranslationOffset(self, *args):
-		self._BakeTo(self.locGoalTarget[1], True)
+		self._BakeLogic(self.locGoalTarget[1], True)
 	def _BakeToRotation(self, *args):
-		self._BakeTo(self.locAim[2], False)
+		self._BakeLogic(self.locAim[2], False)
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
@@ -806,9 +823,10 @@ class OVLP:
 		_OVERLAPPY.CreateUI()
 	def Restart(self, *args):
 		c.evalDeferred("_OVERLAPPY.Start()")
-	def Cleanup(self, *args):
-		c.evalDeferred("_OVERLAPPY = None")
-		c.evalDeferred("OVLP = None")
+	def Cleanup(self, *args): # TODO something wrong
+		# c.evalDeferred("_OVERLAPPY = None")
+		# c.evalDeferred("OVLP = None")
+		pass
 
 _OVERLAPPY = OVLP()
 _OVERLAPPY.Start()
