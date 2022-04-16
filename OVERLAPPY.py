@@ -170,13 +170,13 @@ class OVLP:
 		# BAKING
 		self.layoutBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		#
-		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
+		c.gridLayout(p = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
 		ccBakeTranslation = self._BakeToTranslation
+		ccBakeTranslationOffset = self._BakeToTranslationOffset
 		ccBakeRotation = self._BakeToRotation
 		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
+		c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
-		# ccBakeTranslationOffset = self._BakeToTranslationOffset
-		# c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
@@ -744,40 +744,57 @@ class OVLP:
 		c.delete(_clone)
 		if (c.checkBox(self.checkboxCleanup, q = 1, v = 1)):
 			self._SetupDelete()
-	def _BakeToTranslation(self, *args):
-		if (self.selected == ""):
-			_checkSelected = c.ls(sl = 1)
-			if (len(_checkSelected) == 0):
-				return
-			print("check")
-			self._SetupInit()
-		
+	def _BakeToTranslation(self, *args): # TODO merge repeated
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			if (self.selected == ""): return
+			_iterations = 0
+		else: _iterations = len(_selected)
 		_value1 = self.sliderOffsetX.ValueCheck()
 		_value2 = self.sliderOffsetY.ValueCheck()
 		_value3 = self.sliderOffsetZ.ValueCheck()
 		self.sliderOffsetX.ValueReset()
 		self.sliderOffsetY.ValueReset()
 		self.sliderOffsetZ.ValueReset()
-		self._BakeLogic(self.locGoalTarget[1], True)
+		if (_iterations == 0):
+			self._BakeLogic(self.locGoalTarget[1], True)
+		else:
+			for ii in range(_iterations):
+				c.select(_selected[ii], r = 1)
+				self._SetupInit()
+				self._BakeLogic(self.locGoalTarget[1], True)
+			c.select(_selected, r = 1)
 		self.sliderOffsetX.ValueSet(_value1)
 		self.sliderOffsetY.ValueSet(_value2)
 		self.sliderOffsetZ.ValueSet(_value3)
-	def _BakeToTranslationOffset(self, *args): # TODO need improvements
-		if (self.selected == ""):
-			_checkSelected = c.ls(sl = 1)
-			if (len(_checkSelected) == 0):
-				return
-			print("check")
-			self._SetupInit()
-		self._BakeLogic(self.locGoalTarget[1], True)
-	def _BakeToRotation(self, *args):
-		if (self.selected == ""):
-			_checkSelected = c.ls(sl = 1)
-			if (len(_checkSelected) == 0):
-				return
-			print("check")
-			self._SetupInit()
-		self._BakeLogic(self.locAim[2], False)
+	def _BakeToTranslationOffset(self, *args): # TODO merge repeated # TODO need improvements
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			if (self.selected == ""): return
+			_iterations = 0
+		else: _iterations = len(_selected)
+		if (_iterations == 0):
+			self._BakeLogic(self.locGoalTarget[1], True)
+		else:
+			for ii in range(_iterations):
+				c.select(_selected[ii], r = 1)
+				self._SetupInit()
+				self._BakeLogic(self.locGoalTarget[1], True)
+			c.select(_selected, r = 1)
+	def _BakeToRotation(self, *args): # TODO merge repeated
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			if (self.selected == ""): return
+			_iterations = 0
+		else: _iterations = len(_selected)
+		if (_iterations == 0):
+			self._BakeLogic(self.locGoalTarget[1], True)
+		else:
+			for ii in range(_iterations):
+				c.select(_selected[ii], r = 1)
+				self._SetupInit()
+				self._BakeLogic(self.locAim[2], False)
+			c.select(_selected, r = 1)
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
