@@ -172,11 +172,11 @@ class OVLP:
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeTranslation = self._BakeToTranslation
-		# ccBakeTranslationOffset = self._BakeToTranslationOffset
 		ccBakeRotation = self._BakeToRotation
 		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
-		# c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
+		# ccBakeTranslationOffset = self._BakeToTranslationOffset
+		# c.button(l = "<<< OFFSET", c = ccBakeTranslationOffset, bgc = OVLP.cLOrange)
 		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
@@ -726,7 +726,6 @@ class OVLP:
 	
 	### BAKE
 	def _BakeLogic(self, parent, translation=True, *args):
-		if (self.selected == ""): return
 		if (translation): _attributes = OVLP.attrT
 		else: _attributes = OVLP.attrR
 		c.currentTime(self.time[0])
@@ -746,6 +745,13 @@ class OVLP:
 		if (c.checkBox(self.checkboxCleanup, q = 1, v = 1)):
 			self._SetupDelete()
 	def _BakeToTranslation(self, *args):
+		if (self.selected == ""):
+			_checkSelected = c.ls(sl = 1)
+			if (len(_checkSelected) == 0):
+				return
+			print("check")
+			self._SetupInit()
+		
 		_value1 = self.sliderOffsetX.ValueCheck()
 		_value2 = self.sliderOffsetY.ValueCheck()
 		_value3 = self.sliderOffsetZ.ValueCheck()
@@ -757,8 +763,20 @@ class OVLP:
 		self.sliderOffsetY.ValueSet(_value2)
 		self.sliderOffsetZ.ValueSet(_value3)
 	def _BakeToTranslationOffset(self, *args): # TODO need improvements
+		if (self.selected == ""):
+			_checkSelected = c.ls(sl = 1)
+			if (len(_checkSelected) == 0):
+				return
+			print("check")
+			self._SetupInit()
 		self._BakeLogic(self.locGoalTarget[1], True)
 	def _BakeToRotation(self, *args):
+		if (self.selected == ""):
+			_checkSelected = c.ls(sl = 1)
+			if (len(_checkSelected) == 0):
+				return
+			print("check")
+			self._SetupInit()
 		self._BakeLogic(self.locAim[2], False)
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
