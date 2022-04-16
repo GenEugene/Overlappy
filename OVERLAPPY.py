@@ -135,13 +135,16 @@ class OVLP:
 		c.menuItem(dividerLabel = "Other", divider = 1)
 		c.menuItem(label = "Dev Tools toggle", c = self.LayoutDevToolsToggle)
 		#
-		# c.menu(label = "Help")
+		def LinkGithub(self): c.showHelp("https://github.com/GenEugene/Overlappy", absolute = True)
+		def LinkYoutube(self): c.showHelp("https://www.youtube.com/channel/UCCIzdVu6RMqUoOmxHoOEPAQ", absolute = True)
+		def LinkReport(self): c.showHelp("https://github.com/GenEugene/Overlappy/discussions/categories/report-a-problem", absolute = True)
+		c.menu(label = "Help")
 		# c.menuItem(label = "About Overlappy") # TODO
-		# c.menuItem(dividerLabel = "Links", divider = 1)
-		# c.menuItem(label = "GitHub") # TODO
-		# c.menuItem(label = "YouTube") # TODO
-		# c.menuItem(dividerLabel = "Support", divider = 1)
-		# c.menuItem(label = "Report a Problem...") # TODO
+		c.menuItem(dividerLabel = "Links", divider = 1)
+		c.menuItem(label = "GitHub", c = LinkGithub)
+		c.menuItem(label = "YouTube", c = LinkYoutube)
+		c.menuItem(dividerLabel = "Support", divider = 1)
+		c.menuItem(label = "Report a Problem...", c = LinkReport)
 		
 		# BUTTONS
 		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
@@ -583,7 +586,8 @@ class OVLP:
 		if (deselect):
 			c.select(cl = 1)
 
-	def _OffsetUpdate(self, *args, cacheReset=False):
+	def _OffsetUpdate(self, cacheReset=False, *args):
+		if (type(cacheReset) is float): cacheReset = False
 		if (cacheReset):
 			self.sliderOffsetX.ValueCachedReset()
 			self.sliderOffsetY.ValueCachedReset()
@@ -754,7 +758,7 @@ class OVLP:
 		self.sliderOffsetX.ValueSet(_value1)
 		self.sliderOffsetY.ValueSet(_value2)
 		self.sliderOffsetZ.ValueSet(_value3)
-	def _BakeToTranslationOffset(self, *args):
+	def _BakeToTranslationOffset(self, *args): # TODO need improvements
 		self._BakeLogic(self.locGoalTarget[1], True)
 	def _BakeToRotation(self, *args):
 		self._BakeLogic(self.locAim[2], False)
