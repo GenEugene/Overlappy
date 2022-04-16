@@ -8,10 +8,9 @@ from math import pow, sqrt
 # import maya.mel as mel
 
 class OVLP:
-	devTools = True
 	# NAMING
-	textTitle = "Overlappy v0.2.0"
-	nameWindow = "__OverlappyWindow__"
+	textTitle = "OVERLAPPY v0.2.0"
+	nameWindowMain = "__OverlappyWindow__"
 	nameGroup = "_OverlappyGroup_"
 	#
 	nameLocGoalTarget = ("_locGoal_", "_locTarget_")
@@ -19,20 +18,22 @@ class OVLP:
 	nameParticle = "_particle_"
 	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
 	#
-	nameBakeLocator = ("BakedWorldLocator_")
+	nameBakedWorldLocator = ("BakedWorldLocator_")
 	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 
 	# WINDOW
 	windowWidth = 330
-	windowHeight = 28
+	windowHeight = 27
+	lineHeight = 30
 	sliderWidth = (60, 60, 10)
 	markerWidth = 6
 
+	# LOFT
 	loftFactor = 0.9
 	loftMinDistance = 5
 
-	# SETTINGS # TODO: move to preset
+	# SIMULATION SETTINGS # TODO: move to preset
 	particleRadius = 20
 	particleConserve = 1
 	particleDrag = 0.01
@@ -41,7 +42,7 @@ class OVLP:
 	goalWeight = 0.5
 	nucleusTimeScale = 1
 	
-	# SLIDERS field min/max, slider min/max
+	# SLIDERS (field min/max, slider min/max)
 	rangePRadius = (0, float("inf"), 0, 40)
 	rangePConserve = (0, 1, 0, 1)
 	rangePDrag = (0, 10, 0, 1)
@@ -56,6 +57,7 @@ class OVLP:
 	# COLORS
 	cLRed = (1, .7, .7)
 	cRed = (1, .5, .5)
+	cLOrange = (1, .75, .45)
 	cOrange = (1, .6, .3)
 	cYellow = (1, 1, .5)
 	cGreen = (.6, 1, .6)
@@ -71,6 +73,7 @@ class OVLP:
 	attrT = ["translateX", "translateY", "translateZ"]
 	attrR = ["rotateX", "rotateY", "rotateZ"]
 
+	### MAIN
 	def __init__(self):
 		# VALUES
 		self.time = [0, 0, 0] # min, max, current
@@ -94,41 +97,69 @@ class OVLP:
 		self.sliderOffsetX = None
 		self.sliderOffsetY = None
 		self.sliderOffsetZ = None
+		#
+		self.layoutButtons = None
+		self.layoutBaking = None
+		self.layoutSimulation = None
+		self.layoutOffset = None
+		self.layoutDevTools = None
 	def CreateUI(self):
 		# WINDOW
-		if c.window(OVLP.nameWindow, exists = True):
-			c.deleteUI(OVLP.nameWindow)
-		c.window(OVLP.nameWindow, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0)
-		c.window(OVLP.nameWindow, e = True, rtf = True, wh = (OVLP.windowWidth, OVLP.windowHeight))
+		if c.window(OVLP.nameWindowMain, exists = True):
+			c.deleteUI(OVLP.nameWindowMain)
+		c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = 1, widthHeight = (OVLP.windowWidth, OVLP.windowHeight)) # TODO closeCommand
 		self.layoutMain = c.columnLayout(adj = True, h = OVLP.windowHeight)
 
 		# HEAD MENU
 		c.menuBarLayout()
-		c.menu(label = 'Scene')
-		c.menuItem(label = 'Reload', c = _OVERLAPPY.SceneReload)
-		c.menu(label = 'Script')
-		c.menuItem(label = 'Reload', c = _OVERLAPPY.Restart)
+		#
+		# c.menu(label = "Settings")
+		# c.menuItem(label = "Save")
+		# c.menuItem(label = "Save as")
+		# c.menuItem(label = "Load")
+		# c.menuItem(divider = 1)
+		# c.menuItem(label = "Reset")
+		#
+		c.menu(label = "Scene")
+		c.menuItem(label = "Reload", c = self.SceneReload)
+		c.menuItem(dividerLabel = "Be careful", divider = 1)
+		c.menuItem(label = "Quit", c = self.SceneQuit)
+		#
+		c.menu(label = "Script")
+		c.menuItem(label = "Reload", c = self.Restart)
+		c.menuItem(dividerLabel = "Layouts", divider = 1)
+		c.menuItem(label = "Collapse all", c = self.LayoutsCollapse)
+		c.menuItem(label = "Expand all", c = self.LayoutsExpand)
+		c.menuItem(dividerLabel = "Other", divider = 1)
+		c.menuItem(label = "Dev Tools toggle", c = self.LayoutDevToolsToggle)
+		#
+		# c.menu(label = "Help")
+		# c.menuItem(label = "About Overlappy") # TODO
+		# c.menuItem(dividerLabel = "Links", divider = 1)
+		# c.menuItem(label = "GitHub") # TODO
+		# c.menuItem(label = "YouTube") # TODO
+		# c.menuItem(dividerLabel = "Support", divider = 1)
+		# c.menuItem(label = "Report a Problem...") # TODO
 		
 		# BUTTONS
-		frameButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		# SETUP
-		c.gridLayout(p = frameButtons, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight))
-		ccResetSliders = self._ResetAll
-		ccDeleteSetup = self._SetupDelete
-		ccInitSetup = self._SetupInit
-		c.button(l = "RESET SLIDERS", c = ccResetSliders, bgc = OVLP.cYellow)
-		c.button(l = "DELETE SETUP", c = ccDeleteSetup, bgc = OVLP.cRed)
-		c.button(l = "CREATE SETUP", c = ccInitSetup, bgc = OVLP.cGreen)
-		# c.button(l = "", enable = 0)
+		c.gridLayout(p = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		ccResetAllValues = self._ResetAllValues
+		ccSetupDelete = self._SetupDelete
+		ccSetupScan = self._SetupScan
+		ccSetupInit = self._SetupInit
+		c.button(l = "RESET ALL", c = ccResetAllValues, bgc = OVLP.cYellow)
+		c.button(l = "DELETE SETUP", c = ccSetupDelete, bgc = OVLP.cRed)
+		c.button(l = "SCAN SETUP", c = ccSetupScan, bgc = OVLP.cBlue)
+		c.button(l = "CREATE SETUP", c = ccSetupInit, bgc = OVLP.cGreen)
 		# SELECT
-		c.gridLayout(p = frameButtons, numberOfColumns = 6, cellWidthHeight = (OVLP.windowWidth / 6, OVLP.windowHeight))
-		ccScan = self._ScanObjectsFromScene
+		c.gridLayout(p = self.layoutButtons, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
 		ccSelectObjects = self._SelectObjects
 		ccSelectParticle = self._SelectParticle
 		ccSelectNucleus = self._SelectNucleus
 		ccSelectTarget = self._SelectTarget
 		ccSelectAim = self._SelectAim
-		c.button(l = "SCAN", c = ccScan, bgc = OVLP.cBlue)
 		c.button(l = "OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
 		c.button(l = "PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
 		c.button(l = "NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
@@ -136,23 +167,26 @@ class OVLP:
 		c.button(l = "AIM", c = ccSelectAim, bgc = OVLP.cLBlue)
 
 		# BAKING
-		frameBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		self.layoutBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		#
-		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
+		c.gridLayout(p = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
 		ccBakeTranslation = self._BakeToTranslation
 		ccBakeRotation = self._BakeToRotation
-		c.button(l = "TO TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cOrange)
-		c.button(l = "TO ROTATION", c = ccBakeRotation, bgc = OVLP.cOrange)
+		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
+		c.button(l = "OFFSET", c = ccBakeTranslation, bgc = OVLP.cLOrange)
+		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
 		#
-		c.gridLayout(p = frameBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
+		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
 		c.button(l = "TO WORLD LOCATOR", c = ccBakeToWorldLoc, bgc = OVLP.cOrange)
 		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en = 0)
 
 		# OPTIONS
 		# frameOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		# c.gridLayout(p = frameOptions, numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.windowHeight))
-		# c.button(l = "", bgc = OVLP.cWhite, en = 0)
+		# c.gridLayout(p = frameOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		# c.checkBox(l = "To layer", v = 1)
+		# c.checkBox(l = "Loop")
+		# c.radioButton(l = "radio1", onCommand = "print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SLIDER CLASS
 		class classSlider: # TODO need refactoring
@@ -233,58 +267,90 @@ class OVLP:
 				self.valueCached = 0
 
 		# SIMULATION SETTINGS
-		layoutSliders = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
+		self.layoutSimulation = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccResetSimulation = self._ResetSimulation
 		ccGetSimulation = self._GetSimulation
 		c.button(l = "RESET", c = ccResetSimulation, bgc = OVLP.cYellow)
 		c.button(l = "GET", c = ccGetSimulation, bgc = OVLP.cGray)
-		c.columnLayout(p = layoutSliders)
-		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], layoutSliders, self._ValuesSetSimulation)
-		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], layoutSliders, self._ValuesSetSimulation)
-		self.sliderPDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, OVLP.rangePDrag[0], OVLP.rangePDrag[1], OVLP.rangePDrag[2], OVLP.rangePDrag[3], layoutSliders, self._ValuesSetSimulation)
-		self.sliderPDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, OVLP.rangePDamp[0], OVLP.rangePDamp[1], OVLP.rangePDamp[2], OVLP.rangePDamp[3], layoutSliders, self._ValuesSetSimulation)
-		self.sliderGSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, OVLP.rangeGSmooth[0], OVLP.rangeGSmooth[1], OVLP.rangeGSmooth[2], OVLP.rangeGSmooth[3], layoutSliders, self._ValuesSetSimulation)
-		self.sliderGWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, OVLP.rangeGWeight[0], OVLP.rangeGWeight[1], OVLP.rangeGWeight[2], OVLP.rangeGWeight[3], layoutSliders, self._ValuesSetSimulation)
-		self.sliderNTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, OVLP.rangeNTimeScale[0], OVLP.rangeNTimeScale[1], OVLP.rangeNTimeScale[2], OVLP.rangeNTimeScale[3], layoutSliders, self._ValuesSetSimulation)
+		c.columnLayout(p = self.layoutSimulation)
+		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], self.layoutSimulation, self._ValuesSetSimulation)
+		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], self.layoutSimulation, self._ValuesSetSimulation)
+		self.sliderPDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, OVLP.rangePDrag[0], OVLP.rangePDrag[1], OVLP.rangePDrag[2], OVLP.rangePDrag[3], self.layoutSimulation, self._ValuesSetSimulation)
+		self.sliderPDamp = classSlider("Damp", "Shape.damp", OVLP.nameParticle, True, OVLP.particleDamp, OVLP.rangePDamp[0], OVLP.rangePDamp[1], OVLP.rangePDamp[2], OVLP.rangePDamp[3], self.layoutSimulation, self._ValuesSetSimulation)
+		self.sliderGSmooth = classSlider("G.Smooth", "Shape.goalSmoothness", OVLP.nameParticle, True, OVLP.goalSmooth, OVLP.rangeGSmooth[0], OVLP.rangeGSmooth[1], OVLP.rangeGSmooth[2], OVLP.rangeGSmooth[3], self.layoutSimulation, self._ValuesSetSimulation)
+		self.sliderGWeight = classSlider("G.Weight", "Shape.goalWeight[0]", OVLP.nameParticle, True, OVLP.goalWeight, OVLP.rangeGWeight[0], OVLP.rangeGWeight[1], OVLP.rangeGWeight[2], OVLP.rangeGWeight[3], self.layoutSimulation, self._ValuesSetSimulation)
+		self.sliderNTimeScale = classSlider("Time Scale", ".timeScale", self.nucleus, False, OVLP.nucleusTimeScale, OVLP.rangeNTimeScale[0], OVLP.rangeNTimeScale[1], OVLP.rangeNTimeScale[2], OVLP.rangeNTimeScale[3], self.layoutSimulation, self._ValuesSetSimulation)
 		
 		# OFFSET SETTINGS
-		layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.windowHeight))
+		self.layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
+		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccResetOffset = self._ResetOffset
 		ccGetOffset = self._GetOffsets
 		c.button(l = "RESET", c = ccResetOffset, bgc = OVLP.cYellow)
 		c.button(l = "GET", c = ccGetOffset, bgc = OVLP.cGray)
-		c.columnLayout(p = layoutOffset)
-		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], layoutOffset, self._OffsetUpdate, submenuGet = 1)
-		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], layoutOffset, self._OffsetUpdate, submenuGet = 1)
-		self.sliderOffsetZ = classSlider("   Local Z", "_parentConstraint1.target[0].targetOffsetTranslateZ", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], layoutOffset, self._OffsetUpdate, submenuGet = 1)
+		c.columnLayout(p = self.layoutOffset)
+		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], self.layoutOffset, self._OffsetUpdate, submenuGet = 1)
+		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], self.layoutOffset, self._OffsetUpdate, submenuGet = 1)
+		self.sliderOffsetZ = classSlider("   Local Z", "_parentConstraint1.target[0].targetOffsetTranslateZ", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], self.layoutOffset, self._OffsetUpdate, submenuGet = 1)
 
 		# DEV TOOLS
-		if (OVLP.devTools):
-			frameDev = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-			ccDEVFunction = self._DEVFunction
-			ccTrailDelete = self._MotionTrailDelete
-			ccTrailSelect = self._MotionTrailSelect
-			ccTrailCreate = self._MotionTrailCreate
-			c.gridLayout(numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.windowHeight), p = frameDev)
-			c.button(l = "TRAIL DELETE", c = ccTrailDelete, bgc = OVLP.cBlack)
-			c.button(l = "TRAIL SELECT", c = ccTrailSelect, bgc = OVLP.cBlack)
-			c.button(l = "TRAIL CREATE", c = ccTrailCreate, bgc = OVLP.cBlack)
-			c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
+		self.layoutDevTools = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, cc = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack, vis = False)
+		ccDEVFunction = self._DEVFunction
+		ccTrailDelete = self._MotionTrailDelete
+		ccTrailSelect = self._MotionTrailSelect
+		ccTrailCreate = self._MotionTrailCreate
+		c.gridLayout(p = self.layoutDevTools, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
+		c.button(l = "TRAIL DELETE", c = ccTrailDelete, bgc = OVLP.cBlack)
+		c.button(l = "TRAIL SELECT", c = ccTrailSelect, bgc = OVLP.cBlack)
+		c.button(l = "TRAIL CREATE", c = ccTrailCreate, bgc = OVLP.cBlack)
+		c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
 
 		# RUN WINDOW
-		c.showWindow(OVLP.nameWindow)
+		c.showWindow(OVLP.nameWindowMain)
 		self.Resize_UI()
 	def Resize_UI(self, *args):
-		c.window(OVLP.nameWindow, e = True, h = OVLP.windowHeight, rtf = True)
+		c.window(OVLP.nameWindowMain, e = 1, height = OVLP.windowHeight * 5, resizeToFitChildren = 1)
+	
+	def LayoutsCollapseLogic(self, value, *args):
+		if (value):
+			if (self.LayoutsCollapseCheck() == value):
+				return
+		else:
+			if (self.LayoutsCollapseCheck() == value):
+				return
+		c.frameLayout(self.layoutButtons, e = 1, collapse = value)
+		c.frameLayout(self.layoutBaking, e = 1, collapse = value)
+		c.frameLayout(self.layoutSimulation, e = 1, collapse = value)
+		c.frameLayout(self.layoutOffset, e = 1, collapse = value)
+		c.frameLayout(self.layoutDevTools, e = 1, collapse = value)
+		self.Resize_UI()
+	def LayoutsCollapseCheck(self, *args): # needed to fix the window bug
+		check1 = c.frameLayout(self.layoutButtons, q = 1, collapse = 1)
+		check2 = c.frameLayout(self.layoutBaking, q = 1, collapse = 1)
+		check3 = c.frameLayout(self.layoutSimulation, q = 1, collapse = 1)
+		check4 = c.frameLayout(self.layoutOffset, q = 1, collapse = 1)
+		check5 = c.frameLayout(self.layoutDevTools, q = 1, collapse = 1)
+		if (check1 == check2 == check3 == check4 == check5):
+			return check1
+
+	
+	def LayoutsExpand(self, *args):
+		self.LayoutsCollapseLogic(False)
+	def LayoutsCollapse(self, *args):
+		self.LayoutsCollapseLogic(True)
+	def LayoutDevToolsToggle(self, *args):
+		_value = c.frameLayout(self.layoutDevTools, q = 1, vis = 1)
+		c.frameLayout(self.layoutDevTools, e = 1, vis = not _value)
+		self.Resize_UI()
 	
 	def SceneReload(self, *args):
 		currentScene = c.file(q = True, sceneName = True)
-		if(currentScene):
-			c.file(currentScene, open = True, force = True)
-		else:
-			c.file(new = 1, f = 1)
+		if(currentScene): c.file(currentScene, open = True, force = True)
+		else: c.file(new = 1, f = 1)
+	def SceneQuit(self, *args):
+		c.quit(force = True)
+	
 	def ConvertText(self, text, direction=True, *args):
 		if (direction):
 			_text = text.replace("|", OVLP.replaceSymbols[0])
@@ -327,6 +393,7 @@ class OVLP:
 		self._SetupCreate(self.selected)
 		self._OffsetUpdate(cacheReset = True)
 		c.select(self.selected, r = 1)
+	
 	def _SetupCreate(self, objCurrent, *args):
 		# Names
 		_objConverted = self.ConvertText(objCurrent)
@@ -367,7 +434,7 @@ class OVLP:
 		c.setAttr(self.particle + "Shape.goalWeight[0]", self.sliderGWeight.ValueCheck())
 
 		# Nucleus detection
-		self.nucleus = c.ls(type = 'nucleus')[0]
+		self.nucleus = c.ls(type = "nucleus")[0]
 		# c.parent(self.nucleus, OVLP.nameGroup) # TODO
 		self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
 		c.setAttr(self.nucleus + ".gravity", 0)
@@ -427,33 +494,7 @@ class OVLP:
 		c.setAttr(self.loft[2] + ".overrideShading", 0)
 		if (self._LoftGetDistance() < OVLP.loftMinDistance):
 			c.setAttr(self.loft[2] + ".visibility", 0)
-	def _SetupDelete(self, deselect=True, *args):
-		self.selected = ""
-		self.locGoalTarget = ["", ""]
-		self.locAim = ["", "", ""]
-		self.particle = ""
-		self.nucleus = ""
-		self.loft = ["", "", ""]
-		# Revert cached timeslider
-		# if (self.simulated):
-		# 	self.simulated = False
-		# 	c.currentTime(self.timeCurrent)
-		# Delete group
-		if (c.objExists(OVLP.nameGroup)):
-			c.delete(OVLP.nameGroup)
-		# Delete nucleus node # TODO checkbox
-		_nucleus = c.ls(type = 'nucleus')
-		if (len(_nucleus) > 0):
-			c.delete(_nucleus)
-		# Select cached objects
-		# try:
-		# 	c.select(_selected, r=1) # TODO checkbox
-		# except:
-		# 	pass
-		if (deselect):
-			c.select(cl = 1)
-
-	def _ScanObjectsFromScene(self, *args):
+	def _SetupScan(self, *args):
 		# Check overlappy group
 		if (not c.objExists(OVLP.nameGroup)):
 			c.warning("Overlappy object doesn't exists")
@@ -500,7 +541,7 @@ class OVLP:
 		self.startPositionGoalParticle[0] = c.xform(self.locAim[0], q = 1, t = 1)
 		self.TimeRangeCached()
 		# Nucleus
-		_nucleus = c.ls(type = 'nucleus')
+		_nucleus = c.ls(type = "nucleus")
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
 			self.sliderNTimeScale._name = self.nucleus # TODO: double set nucleus logic
@@ -508,6 +549,31 @@ class OVLP:
 		self.sliderPRadius.ValueGet()
 		self._GetSimulation()
 		self._GetOffsets()
+	def _SetupDelete(self, deselect=True, *args):
+		self.selected = ""
+		self.locGoalTarget = ["", ""]
+		self.locAim = ["", "", ""]
+		self.particle = ""
+		self.nucleus = ""
+		self.loft = ["", "", ""]
+		# Revert cached timeslider
+		# if (self.simulated):
+		# 	self.simulated = False
+		# 	c.currentTime(self.timeCurrent)
+		# Delete group
+		if (c.objExists(OVLP.nameGroup)):
+			c.delete(OVLP.nameGroup)
+		# Delete nucleus node # TODO checkbox
+		_nucleus = c.ls(type = "nucleus")
+		if (len(_nucleus) > 0):
+			c.delete(_nucleus)
+		# Select cached objects
+		# try:
+		# 	c.select(_selected, r=1) # TODO checkbox
+		# except:
+		# 	pass
+		if (deselect):
+			c.select(cl = 1)
 
 	def _OffsetUpdate(self, *args, cacheReset=False):
 		if (cacheReset):
@@ -630,7 +696,7 @@ class OVLP:
 		self.sliderOffsetY.ValueGet()
 		self.sliderOffsetZ.ValueGet()
 	
-	def _ResetAll(self, *args):
+	def _ResetAllValues(self, *args):
 		self.sliderPRadius.ValueReset()
 		self._ResetSimulation()
 		self._ResetOffset()
@@ -649,7 +715,7 @@ class OVLP:
 		self._ValuesSetOffset()
 	
 	### BAKE
-	def _BakeTo(self, parent, translation=True, *args): # TODO check exceptions
+	def _BakeTo(self, parent, translation=True, *args):
 		if (self.selected == ""): return
 		if (translation): _attributes = OVLP.attrT
 		else: _attributes = OVLP.attrR
@@ -679,7 +745,7 @@ class OVLP:
 			return
 		_locators = []
 		for item in _selected: # Create locator
-			_name = OVLP.nameBakeLocator + "1"
+			_name = OVLP.nameBakedWorldLocator + "1"
 			_locator = c.spaceLocator(n = _name)[0]
 			c.matchTransform(_locator, item, pos = True, rot = True)
 			c.parentConstraint(item, _locator, maintainOffset = 1)
