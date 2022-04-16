@@ -98,7 +98,7 @@ class OVLP:
 		# WINDOW
 		if c.window(OVLP.nameWindow, exists = True):
 			c.deleteUI(OVLP.nameWindow)
-		c.window(OVLP.nameWindow, title = OVLP.textTitle, mxb = 0, s = 0)
+		c.window(OVLP.nameWindow, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0)
 		c.window(OVLP.nameWindow, e = True, rtf = True, wh = (OVLP.windowWidth, OVLP.windowHeight))
 		self.layoutMain = c.columnLayout(adj = True, h = OVLP.windowHeight)
 
@@ -167,7 +167,7 @@ class OVLP:
 				self.markerColorChanged = OVLP.cBlue
 				self.valueCached = 0;
 				c.flowLayout(p=parent)
-				self._slider = c.floatSliderGrp(l = " " + label, v = self._value, cc = self._ccCommand, dc = self._ccCommand, fmn = fieldMin, fmx = fieldMax, min = min, max = max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]))
+				self._slider = c.floatSliderGrp(l = " " + label, v = self._value, cc = self._ccCommand, dc = self._ccCommand, fmn = fieldMin, fmx = fieldMax, min = min, max = max, field=1, precision = self._precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]), enableKeyboardFocus = 1)
 				c.popupMenu(p = self._slider)
 				if (submenuReset):
 					c.menuItem(l = "reset", c = self.ValueReset)
@@ -497,7 +497,7 @@ class OVLP:
 		# Time and offset
 		self.TimeRangeGet()
 		self.TimeRangeMin()
-		self.startPositionGoalParticle[0] = c.xform(self.locAim[0], q = 1, t = 1) 
+		self.startPositionGoalParticle[0] = c.xform(self.locAim[0], q = 1, t = 1)
 		self.TimeRangeCached()
 		# Nucleus
 		_nucleus = c.ls(type = 'nucleus')
