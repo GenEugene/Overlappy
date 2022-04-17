@@ -754,14 +754,14 @@ class OVLP:
 			if (not setupDeleteLock):
 				self._SetupDelete()
 	def _BakeToTranslation(self, *args): # TODO merge repeated
-		
 		_selected = c.ls(sl = 1)
 		if (len(_selected) == 0):
 			if (self.selected == ""): return
 			_iterations = 0
 		else:
-			# if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
-			# 	OVLP.SelectTransformHierarchy()
+			if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(sl = 1)
 			_iterations = len(_selected)
 		_value1 = self.sliderOffsetX.ValueCheck()
 		_value2 = self.sliderOffsetY.ValueCheck()
@@ -785,7 +785,11 @@ class OVLP:
 		if (len(_selected) == 0):
 			if (self.selected == ""): return
 			_iterations = 0
-		else: _iterations = len(_selected)
+		else:
+			if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(sl = 1)
+			_iterations = len(_selected)
 		if (_iterations == 0):
 			self._BakeLogic(self.locGoalTarget[1], True)
 		else:
@@ -799,9 +803,13 @@ class OVLP:
 		if (len(_selected) == 0):
 			if (self.selected == ""): return
 			_iterations = 0
-		else: _iterations = len(_selected)
+		else:
+			if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(sl = 1)
+			_iterations = len(_selected)
 		if (_iterations == 0):
-			self._BakeLogic(self.locGoalTarget[1], True)
+			self._BakeLogic(self.locAim[2], False)
 		else:
 			for ii in range(_iterations):
 				c.select(_selected[ii], r = 1)
@@ -813,7 +821,11 @@ class OVLP:
 		if (len(_selected) == 0):
 			if (self.selected == ""): return
 			_iterations = 0
-		else: _iterations = len(_selected)
+		else:
+			if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(sl = 1)
+			_iterations = len(_selected)
 		if (_iterations == 0):
 			_value1 = self.sliderOffsetX.ValueCheck()
 			_value2 = self.sliderOffsetY.ValueCheck()
@@ -853,6 +865,10 @@ class OVLP:
 		if (len(_selected) == 0):
 			c.warning("You must select at least 1 object")
 			return
+		else:
+			if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(sl = 1)
 		_locators = []
 		for item in _selected: # Create locator
 			_name = OVLP.nameBakedWorldLocator + "1"
