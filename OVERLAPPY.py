@@ -163,7 +163,7 @@ class OVLP:
 		c.menuItem(l = "Aim", c = self._SelectAim)
 		c.button(l = "LAYER", c = self._LayerCreate, bgc = OVLP.cBlue)
 		c.popupMenu()
-		c.menuItem(l = "Scan", c = self._LayerScan)
+		c.menuItem(l = "Move to Safe layer", c = self._LayerToSafe)
 		c.menuItem(dividerLabel = "Be careful", divider = 1)
 		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[0]), c = self._LayerBaseDelete)
 		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerBaseAnimationDelete)
@@ -181,8 +181,8 @@ class OVLP:
 		c.button(l = "ROTATION", c = self._BakeToRotation, bgc = OVLP.cLOrange)
 		c.button(l = "COMBO", c = self._BakeCombo, bgc = OVLP.cLOrange)
 		c.popupMenu()
-		c.menuItem(l = "translate + rotate", c = self._BakeCombo1)
-		c.menuItem(l = "rotate + translate", c = self._BakeCombo2)
+		c.menuItem(l = "translate + rotate", c = self._BakeComboTR)
+		c.menuItem(l = "rotate + translate", c = self._BakeComboRT)
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		c.button(l = "TO WORLD LOCATOR", c = self._BakeToWorldLocator, bgc = OVLP.cOrange)
 		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en = 0)
@@ -194,7 +194,6 @@ class OVLP:
 		self.checkboxToLayer = c.checkBox(l = "TO LAYER", v = 1, en = 0)
 		self.checkboxHierarchy = c.checkBox(l = "HIERARCHY")
 		self.checkboxLoop = c.checkBox(l = "LOOP", en = 0)
-		# c.checkBox(l = "Label")
 		# c.radioButton(l = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SLIDER CLASS
@@ -857,10 +856,10 @@ class OVLP:
 				self.sliderOffsetZ.ValueSet(_value3)
 				self._BakeLogic(self.locAim[2], False)
 			c.select(_selected, r = 1)
-	def _BakeCombo1(self, *args):
+	def _BakeComboTR(self, *args):
 		self._BakeToTranslation()
 		self._BakeToRotation()
-	def _BakeCombo2(self, *args):
+	def _BakeComboRT(self, *args):
 		self._BakeToRotation()
 		self._BakeToTranslation()
 	def _BakeToWorldLocator(self, *args):
@@ -898,44 +897,65 @@ class OVLP:
 			c.warning("You must select at least 1 object")
 			return
 
-		if(c.objExists(OVLP.nameLayers[0])):
-			pass
-			# print("Layer '{0}' already exists".format(OVLP.nameLayers[0]))
-		else:
-			# print("Layer '{0}' created".format(OVLP.nameLayers[0]))
+		if(not c.objExists(OVLP.nameLayers[0])):
 			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = 1)
 		
 		_name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
 
 		c.animLayer(_name, override = 1, parent = self.layers[0])
-	def _LayerScan(self, *args):
-		_selected = c.ls(sl = 1)
-		if (len(_selected) == 0):
-			c.warning("You must select at least 1 object")
+	def _LayerToSafe(self, *args):
+		# Check main layer
+		if(not c.objExists(OVLP.nameLayers[0])):
+			print("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
 			return
-
-		if(c.objExists(OVLP.nameLayers[0])):
-			pass
-			# print("Layer '{0}' already exists".format(OVLP.nameLayers[0]))
+		# Get selected layers
+		_selectedLayers = []
+		for animLayer in c.ls(type = "animLayer"):
+			if c.animLayer(animLayer, q = 1, selected = 1):
+				_selectedLayers.append(animLayer)
+		# Check selected count
+		if (len(_selectedLayers) == 0):
+			print("move all layers to SAFE")
 		else:
-			# print("Layer '{0}' created".format(OVLP.nameLayers[0]))
-			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = 1)
+			print("move selected layers to SAFE")
+			# main layer selected
+			# other layers selected
 		
-		_name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
+		return
 
-		c.animLayer(_name, override = 1, parent = self.layers[0])
+		
+		_children = c.animLayer(self.layers[0], q = 1, children = 1)
+
+		print(_children)
+
+		return
+		
+		if(c.objExists(OVLP.nameLayers[1])):
+			pass
+			print("Layer '{0}' already exists".format(OVLP.nameLayers[1]))
+		else:
+			print("Layer '{0}' created".format(OVLP.nameLayers[1]))
+			self.layers[1] = c.animLayer(OVLP.nameLayers[1], override = 1)
+
+		# children
+		
+		# _name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
+		# c.animLayer(_name, override = 1, parent = self.layers[0])
+
+
+		pass
 	def _LayerBaseDelete(self, *args):
 		if(c.objExists(OVLP.nameLayers[0])):
 			c.delete(OVLP.nameLayers[0])
 			print("Layer '{0}' deleted".format(OVLP.nameLayers[0]))
 		else:
-			print("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
+			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
 	def _LayerBaseAnimationDelete(self, *args):
 		if(c.objExists("BaseAnimation")):
 			c.delete("BaseAnimation")
 			print("Layer 'BaseAnimation' deleted")
 		else:
-			print("Layer 'BaseAnimation' doesn't exist")
+			c.warning("Layer 'BaseAnimation' doesn't exist")
 
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
