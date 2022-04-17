@@ -21,6 +21,8 @@ class OVLP:
 	#
 	nameBakedWorldLocator = ("BakedWorldLocator_")
 	#
+	nameLayers = ("_OVLPLayer_")
+	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 	# WINDOW
 	windowWidth = 330
@@ -65,8 +67,8 @@ class OVLP:
 	cDarkGray = (.3, .3, .3)
 	cBlack = (.15, .15, .15)
 	# CONSTANTS
-	attrT = ["translateX", "translateY", "translateZ"]
-	attrR = ["rotateX", "rotateY", "rotateZ"]
+	attrT = ["tx", "ty", "tz"]
+	attrR = ["rx", "ry", "rz"]
 
 	### MAIN
 	def __init__(self):
@@ -91,6 +93,9 @@ class OVLP:
 		self.layoutDevTools = None
 		# CHECKBOXES
 		self.checkboxCleanup = None
+		self.checkboxToLayer = None
+		self.checkboxHierarchy = None
+		self.checkboxLoop = None
 		# SLIDERS
 		self.sliderPRadius = None
 		self.sliderPConserve = None
@@ -147,13 +152,18 @@ class OVLP:
 		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(p = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		c.button(l = "RESET ALL", c = self._ResetAllValues, bgc = OVLP.cYellow)
-		c.button(l = "SELECT", c = self._SelectObjects, bgc = OVLP.cLBlue)
+		c.button(l = "SELECT", c = self.SelectTransformHierarchy, bgc = OVLP.cLBlue)
 		c.popupMenu()
+		c.menuItem(l = "Objects", c = self._SelectObjects)
 		c.menuItem(l = "Particle", c = self._SelectParticle)
 		c.menuItem(l = "Nucleus", c = self._SelectNucleus)
 		c.menuItem(l = "Target", c = self._SelectTarget)
 		c.menuItem(l = "Aim", c = self._SelectAim)
 		c.button(l = "LAYER", c = self._LayerCreate, bgc = OVLP.cBlue)
+		c.popupMenu()
+		c.menuItem(l = "Delete", c = self._LayerDelete)
+		c.menuItem(dividerLabel = "Be careful", divider = 1)
+		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerDeleteBaseAnimation)
 		c.button(l = "SETUP", c = self._SetupInit, bgc = OVLP.cGreen)
 		c.popupMenu()
 		c.menuItem(l = "Scan setup into scene", c = self._SetupScan)
@@ -176,13 +186,11 @@ class OVLP:
 
 		# OPTIONS
 		self.layoutOptions = c.frameLayout(l = "OPTIONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		c.gridLayout(p = self.layoutOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
-		self.checkboxCleanup = c.checkBox(l = "Cleanup", v = 1)
-		# c.popupMenu()
-		# c.menuItem(l = "reset")
-		c.checkBox(l = "To Layer", v = 1, en = 0)
-		c.checkBox(l = "Loop", en = 0)
-		# c.checkBox(l = "Label")
+		c.gridLayout(p = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		self.checkboxCleanup = c.checkBox(l = "CLEANUP", v = 1)
+		self.checkboxToLayer = c.checkBox(l = "TO LAYER", v = 1, en = 0)
+		self.checkboxHierarchy = c.checkBox(l = "HIERARCHY")
+		self.checkboxLoop = c.checkBox(l = "LOOP", en = 0)
 		# c.checkBox(l = "Label")
 		# c.radioButton(l = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
@@ -363,6 +371,16 @@ class OVLP:
 	def TimeRangeCached(self, *args): # TODO to external class
 		c.currentTime(self.time[2])
 
+	def SelectTransformHierarchy(self, *args):# TODO from GETools class (need to merge in future)
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+		c.select(hierarchy = True)
+		list = c.ls(selection = True, type = "transform", shapes = False)
+		c.select(clear = True)
+		for i in range(len(list)):
+			c.select(list[i], add = True)
 	@staticmethod
 	def BakeSelected(DoNotCut=1): # TODO from GETools class (need to merge in future)
 		_startTime = c.playbackOptions(q = 1, min = 1)
@@ -375,7 +393,7 @@ class OVLP:
 		# Get selected objects
 		self.selected = c.ls(sl = 1)
 		if (len(self.selected) == 0):
-			c.warning("Need to select at least 1 object")
+			c.warning("You must select at least 1 object")
 			self.selected = ""
 			return
 		self.selected = self.selected[0]
@@ -736,11 +754,15 @@ class OVLP:
 			if (not setupDeleteLock):
 				self._SetupDelete()
 	def _BakeToTranslation(self, *args): # TODO merge repeated
+		
 		_selected = c.ls(sl = 1)
 		if (len(_selected) == 0):
 			if (self.selected == ""): return
 			_iterations = 0
-		else: _iterations = len(_selected)
+		else:
+			# if (c.checkBox(self.checkboxHierarchy, q = 1, v = 1)):
+			# 	OVLP.SelectTransformHierarchy()
+			_iterations = len(_selected)
 		_value1 = self.sliderOffsetX.ValueCheck()
 		_value2 = self.sliderOffsetY.ValueCheck()
 		_value3 = self.sliderOffsetZ.ValueCheck()
@@ -829,7 +851,7 @@ class OVLP:
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
-			c.warning("Need to select at least 1 object")
+			c.warning("You must select at least 1 object")
 			return
 		_locators = []
 		for item in _selected: # Create locator
@@ -852,12 +874,24 @@ class OVLP:
 
 	### LAYERS
 	def _LayerCreate(self, *args):
-		print("Layer Create")
 
-
-
-
-		pass
+		if(c.objExists(OVLP.nameLayers)):
+			print("Layer '{0}' already exists".format(OVLP.nameLayers))
+		else:
+			print("Layer '{0}' created".format(OVLP.nameLayers))
+			c.animLayer(OVLP.nameLayers, override = 1)
+	def _LayerDelete(self, *args):
+		if(c.objExists(OVLP.nameLayers)):
+			c.delete(OVLP.nameLayers)
+			print("Layer '{0}' deleted".format(OVLP.nameLayers))
+		else:
+			print("Layer '{0}' doesn't exist".format(OVLP.nameLayers))
+	def _LayerDeleteBaseAnimation(self, *args):
+		if(c.objExists("BaseAnimation")):
+			c.delete("BaseAnimation")
+			print("Layer 'BaseAnimation' deleted")
+		else:
+			print("Layer 'BaseAnimation' doesn't exist")
 
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
@@ -866,7 +900,7 @@ class OVLP:
 	def _MotionTrailCreate(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
 		if (len(_selected) == 0):
-			c.warning("Need to select at least 1 object")
+			c.warning("You must select at least 1 object")
 			return
 		_name = "MotionTrail_1"
 		_step = 1
