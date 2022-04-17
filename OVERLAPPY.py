@@ -161,12 +161,13 @@ class OVLP:
 		c.menuItem(l = "Nucleus", c = self._SelectNucleus)
 		c.menuItem(l = "Target", c = self._SelectTarget)
 		c.menuItem(l = "Aim", c = self._SelectAim)
-		c.button(l = "LAYER", c = self._LayerCreate, bgc = OVLP.cBlue)
+		c.button(l = "LAYER", c = self._LayerCreateMain, bgc = OVLP.cBlue)
 		c.popupMenu()
-		c.menuItem(l = "Move to Safe layer", c = self._LayerToSafe)
-		c.menuItem(dividerLabel = "Be careful", divider = 1)
-		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[0]), c = self._LayerBaseDelete)
-		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerBaseAnimationDelete)
+		c.menuItem(l = "Move to Safe layer", c = self._LayerMoveToSafe)
+		c.menuItem(dividerLabel = "Delete", divider = 1)
+		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[0]), c = self._LayerDeleteMain)
+		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[1]), c = self._LayerDeleteSafe)
+		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerDeleteBaseAnimation)
 		c.button(l = "SETUP", c = self._SetupInit, bgc = OVLP.cGreen)
 		c.popupMenu()
 		c.menuItem(l = "Scan setup into scene", c = self._SetupScan)
@@ -891,22 +892,23 @@ class OVLP:
 				c.delete(child)
 
 	### LAYERS
-	def _LayerCreate(self, *args):
+	def _LayerCreateMain(self, *args):
+		# Check selected
 		_selected = c.ls(sl = 1)
 		if (len(_selected) == 0):
 			c.warning("You must select at least 1 object")
 			return
-
+		# Create main layer
 		if(not c.objExists(OVLP.nameLayers[0])):
 			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = 1)
-		
-		_name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
-
-		c.animLayer(_name, override = 1, parent = self.layers[0])
-	def _LayerToSafe(self, *args):
+		# Create layers on selected
+		for item in _selected:
+			_name = OVLP.nameLayers[2] + self.ConvertText(item) + "_1"
+			c.animLayer(_name, override = 1, parent = self.layers[0])
+	def _LayerMoveToSafe(self, *args):
 		# Check main layer
 		if(not c.objExists(OVLP.nameLayers[0])):
-			print("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
+			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
 			return
 		# Get selected layers
 		_selectedLayers = []
@@ -921,10 +923,8 @@ class OVLP:
 				c.warning("Layer '{0}' is empty".format(OVLP.nameLayers[0]))
 				return
 			else:
-				print("move all")#
 				for layer in _children:
 					_filteredLayers.append(layer)
-				# print(_filteredLayers)
 		else:
 			if (_children == None):
 				c.warning("Layer '{0}' is empty".format(OVLP.nameLayers[0]))
@@ -934,34 +934,31 @@ class OVLP:
 					for layer2 in _selectedLayers:
 						if (layer1 == layer2):
 							_filteredLayers.append(layer1)
-							print(layer1)
-			if (len(_filteredLayers) > 0):
-				print("move selected")#
-			else:
-				print("nothing to move")#
-
-			
-			# main layer selected
-			# other layers selected
-		
-
+			if (len(_filteredLayers) == 0):
+				c.warning("Nothing to move")
+				return
+		# Create safe layer
 		if(not c.objExists(OVLP.nameLayers[1])):
-			print("Layer '{0}' created".format(OVLP.nameLayers[1]))
 			self.layers[1] = c.animLayer(OVLP.nameLayers[1], override = 1)
-
-		
-		# _name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
-		# c.animLayer(_name, override = 1, parent = self.layers[0])
-
-
-		pass
-	def _LayerBaseDelete(self, *args):
+		# Move children or selected layers
+		for layer in _filteredLayers:
+			c.animLayer(layer, e = 1, parent = self.layers[1])
+		# Delete base layer if no children
+		if (len(_filteredLayers) == len(_children)):
+			self._LayerDeleteMain()
+	def _LayerDeleteMain(self, *args):
 		if(c.objExists(OVLP.nameLayers[0])):
 			c.delete(OVLP.nameLayers[0])
 			print("Layer '{0}' deleted".format(OVLP.nameLayers[0]))
 		else:
 			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
-	def _LayerBaseAnimationDelete(self, *args):
+	def _LayerDeleteSafe(self, *args):
+		if(c.objExists(OVLP.nameLayers[1])):
+			c.delete(OVLP.nameLayers[1])
+			print("Layer '{0}' deleted".format(OVLP.nameLayers[1]))
+		else:
+			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[1]))
+	def _LayerDeleteBaseAnimation(self, *args):
 		if(c.objExists("BaseAnimation")):
 			c.delete("BaseAnimation")
 			print("Layer 'BaseAnimation' deleted")
