@@ -19,9 +19,9 @@ class OVLP:
 	nameParticle = "_particle_"
 	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
 	#
-	nameBakedWorldLocator = ("BakedWorldLocator_")
+	nameLayers = ("_OVLP_BASE_", "_OVLP_SAFE_", "OVLP_", "OVLPpos_", "OVLProt_")
 	#
-	nameLayers = ("_OVLPLayer_")
+	nameBakedWorldLocator = "BakedWorldLocator_"
 	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 	# WINDOW
@@ -69,6 +69,7 @@ class OVLP:
 	# CONSTANTS
 	attrT = ["tx", "ty", "tz"]
 	attrR = ["rx", "ry", "rz"]
+	attrS = ["sx", "sy", "sz"]
 
 	### MAIN
 	def __init__(self):
@@ -82,6 +83,7 @@ class OVLP:
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
+		self.layers = ["", ""]
 		# LAYOUTS
 		self.windowMain = None
 		self.layoutMain = None
@@ -161,9 +163,10 @@ class OVLP:
 		c.menuItem(l = "Aim", c = self._SelectAim)
 		c.button(l = "LAYER", c = self._LayerCreate, bgc = OVLP.cBlue)
 		c.popupMenu()
-		c.menuItem(l = "Delete", c = self._LayerDelete)
+		c.menuItem(l = "Scan", c = self._LayerScan)
 		c.menuItem(dividerLabel = "Be careful", divider = 1)
-		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerDeleteBaseAnimation)
+		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[0]), c = self._LayerBaseDelete)
+		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerBaseAnimationDelete)
 		c.button(l = "SETUP", c = self._SetupInit, bgc = OVLP.cGreen)
 		c.popupMenu()
 		c.menuItem(l = "Scan setup into scene", c = self._SetupScan)
@@ -382,10 +385,10 @@ class OVLP:
 		for i in range(len(list)):
 			c.select(list[i], add = True)
 	@staticmethod
-	def BakeSelected(DoNotCut=1): # TODO from GETools class (need to merge in future)
+	def BakeSelected(doNotCut=1): # TODO from GETools class (need to merge in future)
 		_startTime = c.playbackOptions(q = 1, min = 1)
 		_endTime = c.playbackOptions(q = 1, max = 1)
-		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = DoNotCut, simulation = 1)
+		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = doNotCut, simulation = 1)
 
 	### LOGIC
 	def _SetupInit(self, *args):
@@ -890,19 +893,44 @@ class OVLP:
 
 	### LAYERS
 	def _LayerCreate(self, *args):
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
 
-		if(c.objExists(OVLP.nameLayers)):
-			print("Layer '{0}' already exists".format(OVLP.nameLayers))
+		if(c.objExists(OVLP.nameLayers[0])):
+			pass
+			# print("Layer '{0}' already exists".format(OVLP.nameLayers[0]))
 		else:
-			print("Layer '{0}' created".format(OVLP.nameLayers))
-			c.animLayer(OVLP.nameLayers, override = 1)
-	def _LayerDelete(self, *args):
-		if(c.objExists(OVLP.nameLayers)):
-			c.delete(OVLP.nameLayers)
-			print("Layer '{0}' deleted".format(OVLP.nameLayers))
+			# print("Layer '{0}' created".format(OVLP.nameLayers[0]))
+			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = 1)
+		
+		_name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
+
+		c.animLayer(_name, override = 1, parent = self.layers[0])
+	def _LayerScan(self, *args):
+		_selected = c.ls(sl = 1)
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+
+		if(c.objExists(OVLP.nameLayers[0])):
+			pass
+			# print("Layer '{0}' already exists".format(OVLP.nameLayers[0]))
 		else:
-			print("Layer '{0}' doesn't exist".format(OVLP.nameLayers))
-	def _LayerDeleteBaseAnimation(self, *args):
+			# print("Layer '{0}' created".format(OVLP.nameLayers[0]))
+			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = 1)
+		
+		_name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
+
+		c.animLayer(_name, override = 1, parent = self.layers[0])
+	def _LayerBaseDelete(self, *args):
+		if(c.objExists(OVLP.nameLayers[0])):
+			c.delete(OVLP.nameLayers[0])
+			print("Layer '{0}' deleted".format(OVLP.nameLayers[0]))
+		else:
+			print("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
+	def _LayerBaseAnimationDelete(self, *args):
 		if(c.objExists("BaseAnimation")):
 			c.delete("BaseAnimation")
 			print("Layer 'BaseAnimation' deleted")
