@@ -4,6 +4,7 @@
 
 import maya.cmds as c
 from math import pow, sqrt
+from functools import partial
 # import sys, os
 # import maya.mel as mel
 
@@ -126,8 +127,8 @@ class OVLP:
 		c.menu(label = "Script")
 		c.menuItem(label = "Reload", c = self.Restart)
 		c.menuItem(dividerLabel = "Layouts", divider = 1)
-		c.menuItem(label = "Collapse all", c = self.LayoutsCollapse)
-		c.menuItem(label = "Expand all", c = self.LayoutsExpand)
+		c.menuItem(label = "Collapse all", c = partial(self.LayoutsCollapseLogic, True))
+		c.menuItem(label = "Expand all", c = partial(self.LayoutsCollapseLogic, False))
 		c.menuItem(dividerLabel = "Other", divider = 1)
 		c.menuItem(label = "Dev Tools toggle", c = self.LayoutDevToolsToggle)
 		#
@@ -144,32 +145,30 @@ class OVLP:
 		
 		# BUTTONS
 		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		# SETUP
 		c.gridLayout(p = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		ccResetAllValues = self._ResetAllValues
-		ccSetupDelete = self._SetupDelete
-		ccSetupScan = self._SetupScan
-		ccSetupInit = self._SetupInit
-		c.button(l = "RESET ALL", c = ccResetAllValues, bgc = OVLP.cYellow)
-		c.button(l = "DELETE SETUP", c = ccSetupDelete, bgc = OVLP.cRed)
-		c.button(l = "SCAN SETUP", c = ccSetupScan, bgc = OVLP.cBlue)
-		c.button(l = "CREATE SETUP", c = ccSetupInit, bgc = OVLP.cGreen)
-		# SELECT
-		c.gridLayout(p = self.layoutButtons, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
 		ccSelectObjects = self._SelectObjects
 		ccSelectParticle = self._SelectParticle
 		ccSelectNucleus = self._SelectNucleus
 		ccSelectTarget = self._SelectTarget
 		ccSelectAim = self._SelectAim
-		c.button(l = "OBJECTS", c = ccSelectObjects, bgc = OVLP.cLBlue)
-		c.button(l = "PARTICLE", c = ccSelectParticle, bgc = OVLP.cLBlue)
-		c.button(l = "NUCLEUS", c = ccSelectNucleus, bgc = OVLP.cLBlue)
-		c.button(l = "TARGET", c = ccSelectTarget, bgc = OVLP.cLBlue)
-		c.button(l = "AIM", c = ccSelectAim, bgc = OVLP.cLBlue)
-
+		ccSetupDelete = self._SetupDelete
+		ccSetupScan = self._SetupScan
+		ccSetupInit = self._SetupInit
+		c.button(l = "RESET ALL", c = ccResetAllValues, bgc = OVLP.cYellow)
+		c.button(l = "SELECT", c = ccSelectObjects, bgc = OVLP.cLBlue)
+		c.popupMenu()
+		c.menuItem(l = "Particle", c = ccSelectParticle)
+		c.menuItem(l = "Nucleus", c = ccSelectNucleus)
+		c.menuItem(l = "Target", c = ccSelectTarget)
+		c.menuItem(l = "Aim", c = ccSelectAim)
+		c.button(l = "DELETE SETUP", c = ccSetupDelete, bgc = OVLP.cRed)
+		c.button(l = "CREATE SETUP", c = ccSetupInit, bgc = OVLP.cGreen)
+		c.popupMenu()
+		c.menuItem(l = "Scan from scene", c = ccSetupScan)
+		
 		# BAKING
 		self.layoutBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
-		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
 		ccBakeTranslation = self._BakeToTranslation
 		ccBakeTranslationOffset = self._BakeToTranslationOffset
@@ -185,7 +184,6 @@ class OVLP:
 		c.popupMenu()
 		c.menuItem(l = "translate + rotate", c = ccBakeCombo1)
 		c.menuItem(l = "rotate + translate", c = ccBakeCombo2)
-		#
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
 		ccBakeToWorldLoc = self._BakeToWorldLocator
 		c.button(l = "TO WORLD LOCATOR", c = ccBakeToWorldLoc, bgc = OVLP.cOrange)
@@ -288,9 +286,12 @@ class OVLP:
 		# SIMULATION SETTINGS
 		self.layoutSimulation = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
-		ccResetSimulation = self._ResetSimulation
+		ccResetSimulationPartial = partial(self._ResetSimulation, False)
+		ccResetSimulationFull = partial(self._ResetSimulation, True)
 		ccGetSimulation = self._GetSimulation
-		c.button(l = "RESET", c = ccResetSimulation, bgc = OVLP.cYellow)
+		c.button(l = "RESET", c = ccResetSimulationPartial, bgc = OVLP.cYellow)
+		c.popupMenu()
+		c.menuItem(l = "Reset all sliders in group", c = ccResetSimulationFull)
 		c.button(l = "GET", c = ccGetSimulation, bgc = OVLP.cGray)
 		c.columnLayout(p = self.layoutSimulation)
 		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], self.layoutSimulation, self._ValuesSetSimulation)
@@ -329,7 +330,7 @@ class OVLP:
 		c.showWindow(self.windowMain)
 		self.Resize_UI()
 	def Resize_UI(self, *args): # TODO get count of visible layouts
-		c.window(self.windowMain, e = 1, height = OVLP.windowHeight * 6, resizeToFitChildren = 1)
+		c.window(self.windowMain, e = 1, height = 152, resizeToFitChildren = 1) # OVLP.windowHeight * 6
 	
 	def LayoutsCollapseLogic(self, value, *args): # TODO to external class
 		if (value):
@@ -354,10 +355,6 @@ class OVLP:
 		check6 = c.frameLayout(self.layoutDevTools, q = 1, collapse = 1)
 		if (check1 == check2 == check3 == check4 == check5 == check6):
 			return check1
-	def LayoutsExpand(self, *args):
-		self.LayoutsCollapseLogic(False)
-	def LayoutsCollapse(self, *args):
-		self.LayoutsCollapseLogic(True)
 	def LayoutDevToolsToggle(self, *args):
 		_value = c.frameLayout(self.layoutDevTools, q = 1, vis = 1)
 		c.frameLayout(self.layoutDevTools, e = 1, vis = not _value)
@@ -723,10 +720,11 @@ class OVLP:
 		self.sliderOffsetZ.ValueGet()
 	
 	def _ResetAllValues(self, *args):
-		self.sliderPRadius.ValueReset()
-		self._ResetSimulation()
+		self._ResetSimulation(True)
 		self._ResetOffset()
-	def _ResetSimulation(self, *args):
+	def _ResetSimulation(self, full=False, *args):
+		if (full):
+			self.sliderPRadius.ValueReset()
 		self.sliderPConserve.ValueReset()
 		self.sliderPDrag.ValueReset()
 		self.sliderPDamp.ValueReset()
@@ -876,9 +874,19 @@ class OVLP:
 			for child in _children:
 				c.delete(child)
 
+	### LAYERS
+	def _LayerCreate(self, *args):
+		print("Layer Create")
+
+
+
+
+		pass
+
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
 		print("DEV Function")
+		self._LayerCreate()
 	
 	def _MotionTrailCreate(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
