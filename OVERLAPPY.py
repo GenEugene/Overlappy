@@ -25,7 +25,7 @@ class OVLP:
 	# WINDOW
 	windowWidth = 330
 	windowHeight = 27
-	lineHeight = 30
+	lineHeight = 28
 	sliderWidth = (60, 60, 10)
 	markerWidth = 6
 	# LOFT
@@ -119,74 +119,59 @@ class OVLP:
 		# c.menuItem(divider = 1)
 		# c.menuItem(label = "Reset")
 		#
-		c.menu(label = "Scene")
-		c.menuItem(label = "Reload", c = self.SceneReload)
+		c.menu(l = "Scene")
+		c.menuItem(l = "Reload", c = self.SceneReload)
 		c.menuItem(dividerLabel = "Be careful", divider = 1)
-		c.menuItem(label = "Quit", c = self.SceneQuit)
+		c.menuItem(l = "Quit", c = self.SceneQuit)
 		#
-		c.menu(label = "Script")
-		c.menuItem(label = "Reload", c = self.Restart)
+		c.menu(l = "Script")
+		c.menuItem(l = "Reload", c = self.Restart)
 		c.menuItem(dividerLabel = "Layouts", divider = 1)
-		c.menuItem(label = "Collapse all", c = partial(self.LayoutsCollapseLogic, True))
-		c.menuItem(label = "Expand all", c = partial(self.LayoutsCollapseLogic, False))
+		c.menuItem(l = "Collapse all", c = partial(self.LayoutsCollapseLogic, True))
+		c.menuItem(l = "Expand all", c = partial(self.LayoutsCollapseLogic, False))
 		c.menuItem(dividerLabel = "Other", divider = 1)
-		c.menuItem(label = "Dev Tools toggle", c = self.LayoutDevToolsToggle)
+		c.menuItem(l = "Dev Tools toggle", c = self.LayoutDevToolsToggle)
 		#
+		c.menu(l = "Help")
 		def LinkGithub(self): c.showHelp("https://github.com/GenEugene/Overlappy", absolute = True)
 		def LinkYoutube(self): c.showHelp("https://www.youtube.com/channel/UCCIzdVu6RMqUoOmxHoOEPAQ", absolute = True)
 		def LinkReport(self): c.showHelp("https://github.com/GenEugene/Overlappy/discussions/categories/report-a-problem", absolute = True)
-		c.menu(label = "Help")
 		# c.menuItem(label = "About Overlappy") # TODO add window with information
 		c.menuItem(dividerLabel = "Links", divider = 1)
-		c.menuItem(label = "GitHub", c = LinkGithub)
-		c.menuItem(label = "YouTube", c = LinkYoutube)
+		c.menuItem(l = "GitHub", c = LinkGithub)
+		c.menuItem(l = "YouTube", c = LinkYoutube)
 		c.menuItem(dividerLabel = "Support", divider = 1)
-		c.menuItem(label = "Report a Problem...", c = LinkReport)
+		c.menuItem(l = "Report a Problem...", c = LinkReport)
 		
 		# BUTTONS
 		self.layoutButtons = c.frameLayout(l = "BUTTONS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(p = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
-		ccResetAllValues = self._ResetAllValues
-		ccSelectObjects = self._SelectObjects
-		ccSelectParticle = self._SelectParticle
-		ccSelectNucleus = self._SelectNucleus
-		ccSelectTarget = self._SelectTarget
-		ccSelectAim = self._SelectAim
-		ccSetupDelete = self._SetupDelete
-		ccSetupScan = self._SetupScan
-		ccSetupInit = self._SetupInit
-		c.button(l = "RESET ALL", c = ccResetAllValues, bgc = OVLP.cYellow)
-		c.button(l = "SELECT", c = ccSelectObjects, bgc = OVLP.cLBlue)
+		c.button(l = "RESET ALL", c = self._ResetAllValues, bgc = OVLP.cYellow)
+		c.button(l = "SELECT", c = self._SelectObjects, bgc = OVLP.cLBlue)
 		c.popupMenu()
-		c.menuItem(l = "Particle", c = ccSelectParticle)
-		c.menuItem(l = "Nucleus", c = ccSelectNucleus)
-		c.menuItem(l = "Target", c = ccSelectTarget)
-		c.menuItem(l = "Aim", c = ccSelectAim)
-		c.button(l = "DELETE SETUP", c = ccSetupDelete, bgc = OVLP.cRed)
-		c.button(l = "CREATE SETUP", c = ccSetupInit, bgc = OVLP.cGreen)
+		c.menuItem(l = "Particle", c = self._SelectParticle)
+		c.menuItem(l = "Nucleus", c = self._SelectNucleus)
+		c.menuItem(l = "Target", c = self._SelectTarget)
+		c.menuItem(l = "Aim", c = self._SelectAim)
+		c.button(l = "LAYER", c = self._LayerCreate, bgc = OVLP.cBlue)
+		c.button(l = "SETUP", c = self._SetupInit, bgc = OVLP.cGreen)
 		c.popupMenu()
-		c.menuItem(l = "Scan from scene", c = ccSetupScan)
+		c.menuItem(l = "Scan setup into scene", c = self._SetupScan)
+		c.menuItem(l = "Delete setup", c = self._SetupDelete)
 		
 		# BAKING
 		self.layoutBaking = c.frameLayout(l = "BAKING", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
-		ccBakeTranslation = self._BakeToTranslation
-		ccBakeTranslationOffset = self._BakeToTranslationOffset
-		ccBakeRotation = self._BakeToRotation
-		ccBakeCombo = self._BakeCombo
-		ccBakeCombo1 = self._BakeCombo1
-		ccBakeCombo2 = self._BakeCombo2
-		c.button(l = "TRANSLATION", c = ccBakeTranslation, bgc = OVLP.cLOrange)
+		c.button(l = "TRANSLATION", c = self._BakeToTranslation, bgc = OVLP.cLOrange)
 		c.popupMenu()
-		c.menuItem(l = "use offset", c = ccBakeTranslationOffset)
-		c.button(l = "ROTATION", c = ccBakeRotation, bgc = OVLP.cLOrange)
-		c.button(l = "COMBO", c = ccBakeCombo, bgc = OVLP.cLOrange)
+		c.menuItem(l = "use offset", c = self._BakeToTranslationOffset)
+		c.button(l = "ROTATION", c = self._BakeToRotation, bgc = OVLP.cLOrange)
+		c.button(l = "COMBO", c = self._BakeCombo, bgc = OVLP.cLOrange)
 		c.popupMenu()
-		c.menuItem(l = "translate + rotate", c = ccBakeCombo1)
-		c.menuItem(l = "rotate + translate", c = ccBakeCombo2)
+		c.menuItem(l = "translate + rotate", c = self._BakeCombo1)
+		c.menuItem(l = "rotate + translate", c = self._BakeCombo2)
 		c.gridLayout(p = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
-		ccBakeToWorldLoc = self._BakeToWorldLocator
-		c.button(l = "TO WORLD LOCATOR", c = ccBakeToWorldLoc, bgc = OVLP.cOrange)
+		c.button(l = "TO WORLD LOCATOR", c = self._BakeToWorldLocator, bgc = OVLP.cOrange)
 		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, en = 0)
 
 		# OPTIONS
@@ -286,13 +271,10 @@ class OVLP:
 		# SIMULATION SETTINGS
 		self.layoutSimulation = c.frameLayout(l = "SIMULATION", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
-		ccResetSimulationPartial = partial(self._ResetSimulation, False)
-		ccResetSimulationFull = partial(self._ResetSimulation, True)
-		ccGetSimulation = self._GetSimulation
-		c.button(l = "RESET", c = ccResetSimulationPartial, bgc = OVLP.cYellow)
+		c.button(l = "RESET", c = partial(self._ResetSimulation, False), bgc = OVLP.cYellow)
 		c.popupMenu()
-		c.menuItem(l = "Reset all sliders in group", c = ccResetSimulationFull)
-		c.button(l = "GET", c = ccGetSimulation, bgc = OVLP.cGray)
+		c.menuItem(l = "Reset all sliders in group", c = partial(self._ResetSimulation, True))
+		c.button(l = "GET", c = self._GetSimulation, bgc = OVLP.cGray)
 		c.columnLayout(p = self.layoutSimulation)
 		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], self.layoutSimulation, self._ValuesSetSimulation)
 		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], self.layoutSimulation, self._ValuesSetSimulation)
@@ -305,10 +287,8 @@ class OVLP:
 		# OFFSET SETTINGS
 		self.layoutOffset = c.frameLayout(l = "OFFSET", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
-		ccResetOffset = self._ResetOffset
-		ccGetOffset = self._GetOffsets
-		c.button(l = "RESET", c = ccResetOffset, bgc = OVLP.cYellow)
-		c.button(l = "GET", c = ccGetOffset, bgc = OVLP.cGray)
+		c.button(l = "RESET", c = self._ResetOffset, bgc = OVLP.cYellow)
+		c.button(l = "GET", c = self._GetOffsets, bgc = OVLP.cGray)
 		c.columnLayout(p = self.layoutOffset)
 		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], self.layoutOffset, self._OffsetUpdate, submenuGet = 1)
 		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], self.layoutOffset, self._OffsetUpdate, submenuGet = 1)
@@ -316,15 +296,11 @@ class OVLP:
 
 		# DEV TOOLS
 		self.layoutDevTools = c.frameLayout(l = "DEV TOOLS", p = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = 1, borderVisible = 1, bgc = OVLP.cBlack, vis = False)
-		ccDEVFunction = self._DEVFunction
-		ccTrailDelete = self._MotionTrailDelete
-		ccTrailSelect = self._MotionTrailSelect
-		ccTrailCreate = self._MotionTrailCreate
 		c.gridLayout(p = self.layoutDevTools, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
-		c.button(l = "TRAIL DELETE", c = ccTrailDelete, bgc = OVLP.cBlack)
-		c.button(l = "TRAIL SELECT", c = ccTrailSelect, bgc = OVLP.cBlack)
-		c.button(l = "TRAIL CREATE", c = ccTrailCreate, bgc = OVLP.cBlack)
-		c.button(l = "DEV FUNCTION", c = ccDEVFunction, bgc = OVLP.cBlack)
+		c.button(l = "TRAIL DELETE", c = self._MotionTrailDelete, bgc = OVLP.cBlack)
+		c.button(l = "TRAIL SELECT", c = self._MotionTrailSelect, bgc = OVLP.cBlack)
+		c.button(l = "TRAIL CREATE", c = self._MotionTrailCreate, bgc = OVLP.cBlack)
+		c.button(l = "DEV FUNCTION", c = self._DEVFunction, bgc = OVLP.cBlack)
 
 		# RUN WINDOW
 		c.showWindow(self.windowMain)
@@ -886,7 +862,6 @@ class OVLP:
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
 		print("DEV Function")
-		self._LayerCreate()
 	
 	def _MotionTrailCreate(self, *args):
 		_selected = c.ls(sl = 1) # Get selected objects
