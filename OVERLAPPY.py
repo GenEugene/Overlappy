@@ -914,30 +914,41 @@ class OVLP:
 			if c.animLayer(animLayer, q = 1, selected = 1):
 				_selectedLayers.append(animLayer)
 		# Check selected count
+		_children = c.animLayer(self.layers[0], q = 1, children = 1)
+		_filteredLayers = []
 		if (len(_selectedLayers) == 0):
-			print("move all layers to SAFE")
+			if (_children == None):
+				c.warning("Layer '{0}' is empty".format(OVLP.nameLayers[0]))
+				return
+			else:
+				print("move all")#
+				for layer in _children:
+					_filteredLayers.append(layer)
+				# print(_filteredLayers)
 		else:
-			print("move selected layers to SAFE")
+			if (_children == None):
+				c.warning("Layer '{0}' is empty".format(OVLP.nameLayers[0]))
+				return
+			else:
+				for layer1 in _children:
+					for layer2 in _selectedLayers:
+						if (layer1 == layer2):
+							_filteredLayers.append(layer1)
+							print(layer1)
+			if (len(_filteredLayers) > 0):
+				print("move selected")#
+			else:
+				print("nothing to move")#
+
+			
 			# main layer selected
 			# other layers selected
 		
-		return
 
-		
-		_children = c.animLayer(self.layers[0], q = 1, children = 1)
-
-		print(_children)
-
-		return
-		
-		if(c.objExists(OVLP.nameLayers[1])):
-			pass
-			print("Layer '{0}' already exists".format(OVLP.nameLayers[1]))
-		else:
+		if(not c.objExists(OVLP.nameLayers[1])):
 			print("Layer '{0}' created".format(OVLP.nameLayers[1]))
 			self.layers[1] = c.animLayer(OVLP.nameLayers[1], override = 1)
 
-		# children
 		
 		# _name = OVLP.nameLayers[2] + self.ConvertText(_selected[0]) + "_1"
 		# c.animLayer(_name, override = 1, parent = self.layers[0])
