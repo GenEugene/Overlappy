@@ -168,12 +168,14 @@ class OVLP:
 		c.menuItem(l = "Aim", c = self._SelectAim)
 		c.button(l = "LAYERS", c = self._LayerCreateMain, bgc = OVLP.cBlue)
 		c.popupMenu()
-		c.menuItem(l = "Move to Safe layer", c = self._LayerMoveToSafe)
+		c.menuItem(dividerLabel = "Move", divider = True)
+		c.menuItem(l = "Move to Safe layer", c = partial(self._LayerMoveToSafeOrBase, True))
+		c.menuItem(l = "Move to Base layer", c = partial(self._LayerMoveToSafeOrBase, False))
 		c.menuItem(dividerLabel = "Delete", divider = True)
-		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[0]), c = self._LayerDeleteMain)
-		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[1]), c = self._LayerDeleteSafe)
+		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[0]), c = partial(self._LayerDelete, OVLP.nameLayers[0]))
+		c.menuItem(l = "Delete '{0}'".format(OVLP.nameLayers[1]), c = partial(self._LayerDelete, OVLP.nameLayers[1]))
 		c.menuItem(divider = True)
-		c.menuItem(l = "Delete 'BaseAnimation'", c = self._LayerDeleteBaseAnimation)
+		c.menuItem(l = "Delete 'BaseAnimation'", c = partial(self._LayerDelete, "BaseAnimation"))
 		c.button(l = "SETUP", c = self._SetupInit, bgc = OVLP.cGreen)
 		c.popupMenu()
 		c.menuItem(l = "Scan setup into scene", c = self._SetupScan)
@@ -315,10 +317,12 @@ class OVLP:
 		# DEV TOOLS
 		self.layoutDevTools = c.frameLayout(l = "DEV TOOLS", parent = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = True, borderVisible = True, bgc = OVLP.cBlack, visible = False)
 		c.gridLayout(parent = self.layoutDevTools, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
-		c.button(l = "TRAIL DELETE", c = self._MotionTrailDelete, bgc = OVLP.cBlack)
-		c.button(l = "TRAIL SELECT", c = self._MotionTrailSelect, bgc = OVLP.cBlack)
-		c.button(l = "TRAIL CREATE", c = self._MotionTrailCreate, bgc = OVLP.cBlack)
 		c.button(l = "DEV FUNCTION", c = self._DEVFunction, bgc = OVLP.cBlack)
+		c.button(l = "MOTION TRAIL", c = self._MotionTrailCreate, bgc = OVLP.cBlack)
+		c.popupMenu()
+		c.menuItem(l = "Select", c = self._MotionTrailSelect)
+		c.menuItem(divider = True)
+		c.menuItem(l = "Delete", c = self._MotionTrailDelete)
 
 		# RUN WINDOW
 		c.showWindow(self.windowMain)
@@ -912,10 +916,15 @@ class OVLP:
 		for item in _selected:
 			_name = OVLP.nameLayers[2] + self.ConvertText(item) + "_1"
 			c.animLayer(_name, override = True, parent = self.layers[0])
-	def _LayerMoveToSafe(self, *args):
-		# Check main layer
-		if(not c.objExists(OVLP.nameLayers[0])):
-			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
+	def _LayerMoveToSafeOrBase(self, safeLayer=True, *args):
+		_id = [0, 1]
+		if (not safeLayer): _id = [1, 0]
+		_layer1 = OVLP.nameLayers[_id[0]]
+		_layer2 = OVLP.nameLayers[_id[1]]
+
+		# Check source layer
+		if(not c.objExists(_layer1)):
+			c.warning("Layer '{0}' doesn't exist".format(_layer1))
 			return
 		# Get selected layers
 		_selectedLayers = []
@@ -923,18 +932,18 @@ class OVLP:
 			if c.animLayer(animLayer, query = True, selected = True):
 				_selectedLayers.append(animLayer)
 		# Check selected count
-		_children = c.animLayer(self.layers[0], query = True, children = True)
+		_children = c.animLayer(self.layers[_id[0]], query = True, children = True)
 		_filteredLayers = []
 		if (len(_selectedLayers) == 0):
 			if (_children == None):
-				c.warning("Layer '{0}' is empty".format(OVLP.nameLayers[0]))
+				c.warning("Layer '{0}' is empty".format(_layer1))
 				return
 			else:
 				for layer in _children:
 					_filteredLayers.append(layer)
 		else:
 			if (_children == None):
-				c.warning("Layer '{0}' is empty".format(OVLP.nameLayers[0]))
+				c.warning("Layer '{0}' is empty".format(_layer1))
 				return
 			else:
 				for layer1 in _children:
@@ -945,33 +954,22 @@ class OVLP:
 				c.warning("Nothing to move")
 				return
 		# Create safe layer
-		if(not c.objExists(OVLP.nameLayers[1])):
-			self.layers[1] = c.animLayer(OVLP.nameLayers[1], override = True)
+		if(not c.objExists(_layer2)):
+			self.layers[_id[1]] = c.animLayer(_layer2, override = True)
 		# Move children or selected layers
 		for layer in _filteredLayers:
-			c.animLayer(layer, edit = True, parent = self.layers[1])
+			c.animLayer(layer, edit = True, parent = self.layers[_id[1]])
 		# Delete base layer if no children
 		if (len(_filteredLayers) == len(_children)):
-			self._LayerDeleteMain()
-	def _LayerDeleteMain(self, *args):
-		if(c.objExists(OVLP.nameLayers[0])):
-			c.delete(OVLP.nameLayers[0])
-			print("Layer '{0}' deleted".format(OVLP.nameLayers[0]))
+			self._LayerDelete(_layer1)
+	
+	def _LayerDelete(self, name, *args):
+		if(c.objExists(name)):
+			c.delete(name)
+			print("Layer '{0}' deleted".format(name))
 		else:
-			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[0]))
-	def _LayerDeleteSafe(self, *args):
-		if(c.objExists(OVLP.nameLayers[1])):
-			c.delete(OVLP.nameLayers[1])
-			print("Layer '{0}' deleted".format(OVLP.nameLayers[1]))
-		else:
-			c.warning("Layer '{0}' doesn't exist".format(OVLP.nameLayers[1]))
-	def _LayerDeleteBaseAnimation(self, *args):
-		if(c.objExists("BaseAnimation")):
-			c.delete("BaseAnimation")
-			print("Layer 'BaseAnimation' deleted")
-		else:
-			c.warning("Layer 'BaseAnimation' doesn't exist")
-
+			c.warning("Layer '{0}' doesn't exist".format(name))
+	
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
 		print("DEV Function")
