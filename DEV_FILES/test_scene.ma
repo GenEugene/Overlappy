@@ -1,6 +1,6 @@
 //Maya ASCII 2022 scene
 //Name: test_scene.ma
-//Last modified: Sun, Apr 17, 2022 08:58:06 PM
+//Last modified: Mon, Apr 18, 2022 03:31:13 AM
 //Codeset: 1251
 requires maya "2022";
 requires "stereoCamera" "10.0";
@@ -11,17 +11,17 @@ fileInfo "product" "Maya 2022";
 fileInfo "version" "2022";
 fileInfo "cutIdentifier" "202110272215-ad32f8f1e6";
 fileInfo "osv" "Windows 10 Pro v2009 (Build: 19044)";
-fileInfo "UUID" "1CD85901-4867-8752-88B6-CE9422376065";
+fileInfo "UUID" "C86E0B84-4E13-BDCC-6E3F-FFA1E767F417";
 createNode transform -s -n "persp";
 	rename -uid "F2EFB51E-4208-1E9B-5F40-068ED671E282";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 1822.2382820820683 390.61629209647572 582.86282821358304 ;
-	setAttr ".r" -type "double3" 4.4616472703836534 66.199999999999918 1.9703826994220073e-15 ;
+	setAttr ".t" -type "double3" 1883.5885315755579 540.46800587687608 614.51661984873783 ;
+	setAttr ".r" -type "double3" -0.93835272961666705 65.400000000000972 0 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "559007C1-4418-043B-E705-8DAF85ED4CA7";
 	setAttr -k off ".v" no;
 	setAttr ".fl" 34.999999999999993;
-	setAttr ".coi" 1934.5234947740896;
+	setAttr ".coi" 2048.5477541005025;
 	setAttr ".imn" -type "string" "persp";
 	setAttr ".den" -type "string" "persp_depth";
 	setAttr ".man" -type "string" "persp_mask";
@@ -78,7 +78,6 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".ai_translator" -type "string" "orthographic";
 createNode transform -n "refAnimation";
 	rename -uid "79AEEC0C-4587-5247-2989-98AE3CB97890";
-	setAttr ".v" no;
 	setAttr ".rp" -type "double3" 0 0 301.9840181372731 ;
 	setAttr ".sp" -type "double3" 0 0 301.9840181372731 ;
 createNode mesh -n "refAnimationShape" -p "refAnimation";
@@ -2653,19 +2652,19 @@ createNode mesh -n "cube_Shape4" -p "|testGroup|ns_2:cube_1|ns_2:cube_2|ns_2:cub
 	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
 	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "5EDD592F-4695-2218-4357-5CB2A4BBA190";
+	rename -uid "5197F9F5-4F8F-77D1-444A-1FAB463D768D";
 	setAttr -s 3 ".lnk";
 	setAttr -s 3 ".slnk";
 createNode shapeEditorManager -n "shapeEditorManager";
-	rename -uid "670D0BF0-41DC-A725-1B7B-2E86123E0C96";
+	rename -uid "C2887439-4FB2-04A3-C22E-62BF81498618";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
-	rename -uid "6F71A768-4E04-263A-2C2F-E881DB4DA099";
+	rename -uid "8F11F101-4615-2547-A447-F0A484B8AD2A";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "FD0E6BBE-4928-617F-8BAE-41963B318675";
+	rename -uid "CCABE56E-40AD-9FDC-E6DF-ABB8BAC683BD";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "F981115F-414C-5A15-6771-1A8ED2DDD70A";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "165004D4-4572-2A45-1774-BFBC1DC7E844";
+	rename -uid "AAD650DC-4CAC-CF7B-5898-8CA53E3D1187";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "D52DDD41-4E11-5313-C822-C0A1E337E5B6";
 	setAttr ".g" yes;
@@ -2683,23 +2682,32 @@ createNode particleCloud -n "npPointsVolume";
 	rename -uid "73A9946C-4F6E-B38D-D0D8-8F9A6CF9C30B";
 createNode script -n "sceneConfigurationScriptNode";
 	rename -uid "D71A42A1-4712-B81B-9FBC-CA92A2B35E24";
-	setAttr ".b" -type "string" "playbackOptions -min 0 -max 120 -ast 0 -aet 120 ";
+	setAttr ".b" -type "string" "playbackOptions -min 0 -max 170 -ast 0 -aet 170 ";
 	setAttr ".st" 6;
 createNode animCurveTA -n "refAnimation_rotateX";
 	rename -uid "FB0ECB72-47D8-6204-04B2-84AE145B82E8";
 	setAttr ".tan" 28;
-	setAttr -s 7 ".ktv[0:6]"  0 0 10 6.6094181711501259 15 8.836016474978841
-		 25 -23.190588575900794 48 -23.190588575900794 55 -48.345679895174115 66 -183.12308718960404;
+	setAttr -s 8 ".ktv[0:7]"  0 0 10 6.6094181711501259 18 8.836016474978841
+		 23 -23.190588575900794 51 -23.190588575900794 61 -48.345679895174115 72 -175.38890241985342
+		 96 -175.38890241985342;
+	setAttr -s 8 ".kit[5:7]"  18 18 18;
+	setAttr -s 8 ".kot[5:7]"  18 18 18;
 createNode animCurveTA -n "refAnimation_rotateY";
 	rename -uid "7BE3132A-4A00-8180-C9FE-438065744ADB";
 	setAttr ".tan" 28;
-	setAttr -s 7 ".ktv[0:6]"  0 0 10 1.6842909726729809 15 1.717007778351481
-		 25 5.1432704514053453 48 5.1432704514053453 55 -17.089654135573163 66 -13.520803284304291;
+	setAttr -s 10 ".ktv[0:9]"  0 0 10 1.6842909726729809 18 1.717007778351481
+		 23 5.1432704514053453 51 5.1432704514053453 61 15.31245740627549 72 0 96 0 103 8.2191685395770282
+		 120 -360;
+	setAttr -s 10 ".kit[5:9]"  18 18 18 18 18;
+	setAttr -s 10 ".kot[5:9]"  18 18 18 18 18;
 createNode animCurveTA -n "refAnimation_rotateZ";
 	rename -uid "8F33BE6F-4B16-382B-756C-60A0DBB33B16";
 	setAttr ".tan" 28;
-	setAttr -s 7 ".ktv[0:6]"  0 0 10 -9.1197063271498653 15 -11.871062515478497
-		 25 29.023951939590933 48 29.023951939590933 55 77.146002484730289 66 94.984959187619623;
+	setAttr -s 10 ".ktv[0:9]"  0 0 10 -9.1197063271498653 18 -11.871062515478497
+		 23 29.023951939590933 51 29.023951939590933 61 77.146002484730289 72 94.605832483220141
+		 96 94.605832483220141 105 65.602639596655493 122 122.47164525658611;
+	setAttr -s 10 ".kit[5:9]"  18 18 18 18 18;
+	setAttr -s 10 ".kot[5:9]"  18 18 18 18 18;
 select -ne :time1;
 	setAttr ".o" 0;
 select -ne :hardwareRenderingGlobals;
