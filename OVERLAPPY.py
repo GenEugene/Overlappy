@@ -94,10 +94,11 @@ class OVLP:
 		self.layoutOffset = None
 		self.layoutDevTools = None
 		# CHECKBOXES
-		self.checkboxCleanup = None
-		self.checkboxToLayer = None
-		self.checkboxHierarchy = None
+		self.checkboxChain = None
+		self.checkboxMirror = None
 		self.checkboxLoop = None
+		self.checkboxLayer = None
+		self.checkboxClean = None
 		# SLIDERS
 		self.sliderPRadius = None
 		self.sliderPConserve = None
@@ -198,11 +199,12 @@ class OVLP:
 
 		# OPTIONS
 		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
-		self.checkboxCleanup = c.checkBox(label = "CLEANUP", value = True)
-		self.checkboxToLayer = c.checkBox(label = "TO LAYER", value = True, enable = 0)
-		self.checkboxHierarchy = c.checkBox(label = "HIERARCHY")
+		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
+		self.checkboxChain = c.checkBox(label = "CHAIN")
+		self.checkboxMirror = c.checkBox(label = "MIRROR", enable = 0)
+		self.checkboxLayer = c.checkBox(label = "LAYER", value = True, enable = 0)
 		self.checkboxLoop = c.checkBox(label = "LOOP", enable = 0)
+		self.checkboxClean = c.checkBox(label = "CLEAN", value = True)
 		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SLIDER CLASS
@@ -290,11 +292,11 @@ class OVLP:
 
 		# SIMULATION SETTINGS
 		self.layoutSimulation = c.frameLayout(label = "SIMULATION", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
+		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.lineHeight))
 		c.button(label = "RESET", command = partial(self._ResetSimulation, False), backgroundColor = OVLP.cYellow)
 		c.popupMenu()
-		c.menuItem(label = "Reset all sliders in group", command = partial(self._ResetSimulation, True))
-		c.button(label = "GET", command = self._GetSimulation, backgroundColor = OVLP.cGray)
+		c.menuItem(label = "Reset all sliders", command = partial(self._ResetSimulation, True))
+		c.menuItem(label = "Get values", command = self._GetSimulation)
 		c.columnLayout(parent = self.layoutSimulation)
 		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], self.layoutSimulation, self._ValuesSetSimulation)
 		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], self.layoutSimulation, self._ValuesSetSimulation)
@@ -306,10 +308,10 @@ class OVLP:
 		
 		# OFFSET SETTINGS
 		self.layoutOffset = c.frameLayout(label = "OFFSET", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
+		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.lineHeight))
 		c.button(label = "RESET", command = self._ResetOffset, backgroundColor = OVLP.cYellow)
-		c.button(label = "GET", command = self._GetOffsets, backgroundColor = OVLP.cGray)
-		# TODO mirror offsets checkbox
+		c.popupMenu()
+		c.menuItem(label = "Get values", command = self._GetOffsets)
 		c.columnLayout(parent = self.layoutOffset)
 		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
 		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
@@ -466,8 +468,8 @@ class OVLP:
 
 		# Nucleus detection
 		self.nucleus = c.ls(type = "nucleus")[0]
-		# c.parent(self.nucleus, OVLP.nameGroup) # TODO try to move nucleus in group
-		self.sliderNTimeScale.name = self.nucleus # TODO: double set nucleus logic
+		c.parent(self.nucleus, OVLP.nameGroup)
+		self.sliderNTimeScale.name = self.nucleus
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
 		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO maybe need check start frame in other functions?
@@ -575,7 +577,7 @@ class OVLP:
 		_nucleus = c.ls(type = "nucleus")
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
-			self.sliderNTimeScale.name = self.nucleus # TODO: double set nucleus logic
+			self.sliderNTimeScale.name = self.nucleus
 		# Get sliders
 		self.sliderPRadius.ValueGet()
 		self._GetSimulation()
@@ -587,22 +589,13 @@ class OVLP:
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
-		# Revert cached timeslider
-		# if (self.simulated):
-		# 	self.simulated = False
-		# 	c.currentTime(self.timeCurrent)
 		# Delete group
 		if (c.objExists(OVLP.nameGroup)):
 			c.delete(OVLP.nameGroup)
-		# Delete nucleus node # TODO checkbox
+		# Delete nucleus node
 		_nucleus = c.ls(type = "nucleus")
 		if (len(_nucleus) > 0):
 			c.delete(_nucleus)
-		# Select cached objects
-		# try:
-		# 	c.select(_selected, r=1) # TODO checkbox
-		# except:
-		# 	pass
 		if (deselect):
 			c.select(clear = True)
 
@@ -773,7 +766,7 @@ class OVLP:
 		c.copyKey(_clone, attribute = _attributes) # TODO filtered attributes
 		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
 		c.delete(_clone)
-		if (c.checkBox(self.checkboxCleanup, query = True, value = True)):
+		if (c.checkBox(self.checkboxClean, query = True, value = True)):
 			if (not deleteSetupLock):
 				self._SetupDelete()
 		# Restore offsets
@@ -787,7 +780,7 @@ class OVLP:
 			if (self.selected == ""): return None
 			return 0, None
 		else:
-			if (c.checkBox(self.checkboxHierarchy, query = True, value = True)):
+			if (c.checkBox(self.checkboxChain, query = True, value = True)):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 			return len(_selected), _selected
@@ -831,7 +824,7 @@ class OVLP:
 			c.warning("You must select at least 1 object")
 			return
 		else:
-			if (c.checkBox(self.checkboxHierarchy, query = True, value = True)):
+			if (c.checkBox(self.checkboxChain, query = True, value = True)):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 		_locators = []
