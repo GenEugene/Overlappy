@@ -767,80 +767,73 @@ class OVLP:
 		if (c.checkBox(self.checkboxCleanup, query = True, value = True)):
 			if (not setupDeleteLock):
 				self._SetupDelete()
-	def _BakeToTranslation(self, *args): # TODO merge repeated
+	
+	def _BakeCheckSelected(self, *args):
 		_selected = c.ls(selection = True)
 		if (len(_selected) == 0):
-			if (self.selected == ""): return
-			_iterations = 0
+			if (self.selected == ""): return None
+			return 0, None
 		else:
 			if (c.checkBox(self.checkboxHierarchy, query = True, value = True)):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
-			_iterations = len(_selected)
+			return len(_selected), _selected
+	
+	def _BakeToTranslation(self, *args): # TODO merge repeated
+		_result = self._BakeCheckSelected()
+		if (_result == None): return
+		
 		_value1 = self.sliderOffsetX.ValueCheck()
 		_value2 = self.sliderOffsetY.ValueCheck()
 		_value3 = self.sliderOffsetZ.ValueCheck()
 		self.sliderOffsetX.ValueReset()
 		self.sliderOffsetY.ValueReset()
 		self.sliderOffsetZ.ValueReset()
-		if (_iterations == 0):
+		
+		if (_result[0] == 0):
 			self._BakeLogic(self.locGoalTarget[1], True)
 		else:
-			for ii in range(_iterations):
-				c.select(_selected[ii], replace = True)
+			for ii in range(_result[0]):
+				c.select(_result[1][ii], replace = True)
 				self._SetupInit()
 				self._BakeLogic(self.locGoalTarget[1], True)
-			c.select(_selected, replace = True)
+			c.select(_result[1], replace = True)
+		
 		self.sliderOffsetX.ValueSet(_value1)
 		self.sliderOffsetY.ValueSet(_value2)
 		self.sliderOffsetZ.ValueSet(_value3)
+	
 	def _BakeToTranslationOffset(self, *args): # TODO merge repeated # TODO need improvements
-		_selected = c.ls(selection = True)
-		if (len(_selected) == 0):
-			if (self.selected == ""): return
-			_iterations = 0
-		else:
-			if (c.checkBox(self.checkboxHierarchy, query = True, value = True)):
-				self.SelectTransformHierarchy()
-				_selected = c.ls(selection = True)
-			_iterations = len(_selected)
-		if (_iterations == 0):
+		_result = self._BakeCheckSelected()
+		if (_result == None): return
+
+		if (_result[0] == 0):
 			self._BakeLogic(self.locGoalTarget[1], True)
 		else:
-			for ii in range(_iterations):
-				c.select(_selected[ii], replace = True)
+			for ii in range(_result[0]):
+				c.select(_result[1][ii], replace = True)
 				self._SetupInit()
 				self._BakeLogic(self.locGoalTarget[1], True)
-			c.select(_selected, replace = True)
+			c.select(_result[1], replace = True)
+	
 	def _BakeToRotation(self, *args): # TODO merge repeated
-		_selected = c.ls(selection = True)
-		if (len(_selected) == 0):
-			if (self.selected == ""): return
-			_iterations = 0
-		else:
-			if (c.checkBox(self.checkboxHierarchy, query = True, value = True)):
-				self.SelectTransformHierarchy()
-				_selected = c.ls(selection = True)
-			_iterations = len(_selected)
-		if (_iterations == 0):
+		_result = self._BakeCheckSelected()
+		if (_result == None): return
+		
+		if (_result[0] == 0):
 			self._BakeLogic(self.locAim[2], False)
 		else:
-			for ii in range(_iterations):
-				c.select(_selected[ii], replace = True)
+			for ii in range(_result[0]):
+				c.select(_result[1][ii], replace = True)
 				self._SetupInit()
 				self._BakeLogic(self.locAim[2], False)
-			c.select(_selected, replace = True)
+			c.select(_result[1], replace = True)
+	
 	def _BakeCombo(self, *args): # TODO merge repeated
-		_selected = c.ls(selection = True)
-		if (len(_selected) == 0):
-			if (self.selected == ""): return
-			_iterations = 0
-		else:
-			if (c.checkBox(self.checkboxHierarchy, query = True, value = True)):
-				self.SelectTransformHierarchy()
-				_selected = c.ls(selection = True)
-			_iterations = len(_selected)
-		if (_iterations == 0):
+		_result = self._BakeCheckSelected()
+		if (_result == None): return
+
+		if (_result[0] == 0):
 			_value1 = self.sliderOffsetX.ValueCheck()
 			_value2 = self.sliderOffsetY.ValueCheck()
 			_value3 = self.sliderOffsetZ.ValueCheck()
@@ -853,8 +846,8 @@ class OVLP:
 			self.sliderOffsetZ.ValueSet(_value3)
 			self._BakeLogic(self.locAim[2], False)
 		else:
-			for ii in range(_iterations):
-				c.select(_selected[ii], replace = True)
+			for ii in range(_result[0]):
+				c.select(_result[1][ii], replace = True)
 				self._SetupInit()
 				_value1 = self.sliderOffsetX.ValueCheck()
 				_value2 = self.sliderOffsetY.ValueCheck()
@@ -867,13 +860,15 @@ class OVLP:
 				self.sliderOffsetY.ValueSet(_value2)
 				self.sliderOffsetZ.ValueSet(_value3)
 				self._BakeLogic(self.locAim[2], False)
-			c.select(_selected, replace = True)
+			c.select(_result[1], replace = True)
+	
 	def _BakeComboTR(self, *args):
 		self._BakeToTranslation()
 		self._BakeToRotation()
 	def _BakeComboRT(self, *args):
 		self._BakeToRotation()
 		self._BakeToTranslation()
+	
 	def _BakeToWorldLocator(self, *args):
 		_selected = c.ls(selection = True) # Get selected objects
 		if (len(_selected) == 0):
