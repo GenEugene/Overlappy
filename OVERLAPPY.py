@@ -184,16 +184,16 @@ class OVLP:
 		# BAKING
 		self.layoutBaking = c.frameLayout(l = "BAKING", parent = self.layoutMain, cc = self.Resize_UI, ec = self.Resize_UI, collapsable = True, borderVisible = True, bgc = OVLP.cBlack)
 		c.gridLayout(parent = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
-		c.button(l = "TRANSLATION", c = self._BakeVariantTranslation, bgc = OVLP.cLOrange)
+		c.button(l = "TRANSLATION", c = partial(self._BakeVariants, 1), bgc = OVLP.cLOrange)
 		c.popupMenu()
-		c.menuItem(l = "use offset", c = self._BakeVariantTranslationOffset)
-		c.button(l = "ROTATION", c = self._BakeVariantRotation, bgc = OVLP.cLOrange)
-		c.button(l = "COMBO", c = self._BakeVariantCombo, bgc = OVLP.cLOrange)
+		c.menuItem(l = "use offset", c = partial(self._BakeVariants, 2))
+		c.button(l = "ROTATION", c = partial(self._BakeVariants, 3), bgc = OVLP.cLOrange)
+		c.button(l = "COMBO", c = partial(self._BakeVariants, 4), bgc = OVLP.cLOrange)
 		c.popupMenu()
 		c.menuItem(l = "translate + rotate", c = self._BakeVariantComboTR)
 		c.menuItem(l = "rotate + translate", c = self._BakeVariantComboRT)
 		c.gridLayout(parent = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
-		c.button(l = "TO WORLD LOCATOR", c = self._BakeCustomWorldLocator, bgc = OVLP.cOrange)
+		c.button(l = "TO WORLD LOCATOR", c = self._BakeWorldLocator, bgc = OVLP.cOrange)
 		c.button(l = "FROM SELECTED TO SELECTED", bgc = OVLP.cOrange, enable = 0)
 
 		# OPTIONS
@@ -780,7 +780,6 @@ class OVLP:
 			self.sliderOffsetX.ValueSet(_value1)
 			self.sliderOffsetY.ValueSet(_value2)
 			self.sliderOffsetZ.ValueSet(_value3)
-
 	def _BakeCheck(self, *args):
 		_selected = c.ls(selection = True)
 		if (len(_selected) == 0):
@@ -791,84 +790,41 @@ class OVLP:
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 			return len(_selected), _selected
-	
-	def _BakeVariant(self, *args): # TODO
+	def _BakeVariants(self, variant, *args):
 		_selected = self._BakeCheck()
 		if (_selected == None): return
 
 		if (_selected[0] == 0):
-			self._BakeLogic(self.locGoalTarget[1], True, True, True)
-			self._BakeLogic(self.locAim[2], False, False, False)
-		else:
-			for ii in range(_selected[0]):
-				c.select(_selected[1][ii], replace = True)
-				self._SetupInit()
-				self._BakeLogic(self.locGoalTarget[1], True, True, True)
-				self._BakeLogic(self.locAim[2], False, False, False)
-			c.select(_selected[1], replace = True)
-	
-	def _BakeVariantTranslation(self, *args): # TODO
-		_selected = self._BakeCheck()
-		if (_selected == None): return
-		
-		if (_selected[0] == 0):
-			self._BakeLogic(self.locGoalTarget[1], True, True, False)
-		else:
-			for ii in range(_selected[0]):
-				c.select(_selected[1][ii], replace = True)
-				self._SetupInit()
+			if (variant == 1):
 				self._BakeLogic(self.locGoalTarget[1], True, True, False)
-			c.select(_selected[1], replace = True)
-	
-	def _BakeVariantTranslationOffset(self, *args): # TODO # TODO need improvements
-		_selected = self._BakeCheck()
-		if (_selected == None): return
-
-		if (_selected[0] == 0):
-			self._BakeLogic(self.locGoalTarget[1], False, True, False)
-		else:
-			for ii in range(_selected[0]):
-				c.select(_selected[1][ii], replace = True)
-				self._SetupInit()
+			elif (variant == 2):
 				self._BakeLogic(self.locGoalTarget[1], False, True, False)
-			c.select(_selected[1], replace = True)
-	
-	def _BakeVariantRotation(self, *args): # TODO
-		_selected = self._BakeCheck()
-		if (_selected == None): return
-		
-		if (_selected[0] == 0):
-			self._BakeLogic(self.locAim[2], False, False, False)
-		else:
-			for ii in range(_selected[0]):
-				c.select(_selected[1][ii], replace = True)
-				self._SetupInit()
+			elif (variant == 3):
 				self._BakeLogic(self.locAim[2], False, False, False)
-			c.select(_selected[1], replace = True)
-	
-	def _BakeVariantCombo(self, *args): # TODO
-		_selected = self._BakeCheck()
-		if (_selected == None): return
-
-		if (_selected[0] == 0):
-			self._BakeLogic(self.locGoalTarget[1], True, True, True)
-			self._BakeLogic(self.locAim[2], False, False, False)
-		else:
-			for ii in range(_selected[0]):
-				c.select(_selected[1][ii], replace = True)
-				self._SetupInit()
+			elif (variant == 4):
 				self._BakeLogic(self.locGoalTarget[1], True, True, True)
 				self._BakeLogic(self.locAim[2], False, False, False)
+		else:
+			for ii in range(_selected[0]):
+				c.select(_selected[1][ii], replace = True)
+				self._SetupInit()
+				if (variant == 1):
+					self._BakeLogic(self.locGoalTarget[1], True, True, False)
+				elif (variant == 2):
+					self._BakeLogic(self.locGoalTarget[1], False, True, False)
+				elif (variant == 3):
+					self._BakeLogic(self.locAim[2], False, False, False)
+				elif (variant == 4):
+					self._BakeLogic(self.locGoalTarget[1], True, True, True)
+					self._BakeLogic(self.locAim[2], False, False, False)
 			c.select(_selected[1], replace = True)
-	
 	def _BakeVariantComboTR(self, *args):
-		self._BakeVariantTranslation()
-		self._BakeVariantRotation()
+		self._BakeVariants(1)
+		self._BakeVariants(3)
 	def _BakeVariantComboRT(self, *args):
-		self._BakeVariantRotation()
-		self._BakeVariantTranslation()
-	
-	def _BakeCustomWorldLocator(self, *args):
+		self._BakeVariants(3)
+		self._BakeVariants(1)
+	def _BakeWorldLocator(self, *args):
 		_selected = c.ls(selection = True) # Get selected objects
 		if (len(_selected) == 0):
 			c.warning("You must select at least 1 object")
