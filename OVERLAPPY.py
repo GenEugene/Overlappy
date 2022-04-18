@@ -42,16 +42,16 @@ class OVLP:
 	goalWeight = 0.5
 	nucleusTimeScale = 1
 	# SLIDERS (field min/max, slider min/max)
-	rangePRadius = (0, float("inf"), 0, 40)
+	rangePRadius = (0, float("inf"), 0, 50)
 	rangePConserve = (0, 1, 0, 1)
 	rangePDrag = (0, 10, 0, 1)
 	rangePDamp = (0, 10, 0, 1)
 	rangeGSmooth = (0, 100, 0, 10)
 	rangeGWeight = (0, 1, 0, 1)
 	rangeNTimeScale = (0.001, 100, 0.001, 4)
-	rangeOffsetX = (float("-inf"), float("inf"), -100, 100)
-	rangeOffsetY = (float("-inf"), float("inf"), -100, 100)
-	rangeOffsetZ = (float("-inf"), float("inf"), -100, 100)
+	rangeOffsetX = (float("-inf"), float("inf"), 0, 300)
+	rangeOffsetY = (float("-inf"), float("inf"), 0, 300)
+	rangeOffsetZ = (float("-inf"), float("inf"), 0, 300)
 	# COLORS
 	cLRed = (1, .7, .7)
 	cRed = (1, .5, .5)
@@ -95,10 +95,12 @@ class OVLP:
 		self.layoutDevTools = None
 		# CHECKBOXES
 		self.checkboxChain = None
-		self.checkboxMirror = None
-		self.checkboxLoop = None
 		self.checkboxLayer = None
+		self.checkboxLoop = None
 		self.checkboxClean = None
+		self.checkboxMirrorX = None
+		self.checkboxMirrorY = None
+		self.checkboxMirrorZ = None
 		# SLIDERS
 		self.sliderPRadius = None
 		self.sliderPConserve = None
@@ -199,9 +201,8 @@ class OVLP:
 
 		# OPTIONS
 		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 5, cellWidthHeight = (OVLP.windowWidth / 5, OVLP.lineHeight))
+		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		self.checkboxChain = c.checkBox(label = "CHAIN")
-		self.checkboxMirror = c.checkBox(label = "MIRROR", enable = 0)
 		self.checkboxLayer = c.checkBox(label = "LAYER", value = True, enable = 0)
 		self.checkboxLoop = c.checkBox(label = "LOOP", enable = 0)
 		self.checkboxClean = c.checkBox(label = "CLEAN", value = True)
@@ -308,10 +309,13 @@ class OVLP:
 		
 		# OFFSET SETTINGS
 		self.layoutOffset = c.frameLayout(label = "OFFSET", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(numberOfColumns = 1, cellWidthHeight = (OVLP.windowWidth / 1, OVLP.lineHeight))
+		c.gridLayout(numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		c.button(label = "RESET", command = self._ResetOffset, backgroundColor = OVLP.cYellow)
 		c.popupMenu()
 		c.menuItem(label = "Get values", command = self._GetOffsets)
+		self.checkboxMirrorX = c.checkBox(label = "MIRROR X", changeCommand = partial(self._OffsetUpdate, True)) # TODO reset
+		self.checkboxMirrorY = c.checkBox(label = "MIRROR Y", changeCommand = partial(self._OffsetUpdate, True))
+		self.checkboxMirrorZ = c.checkBox(label = "MIRROR Z", changeCommand = partial(self._OffsetUpdate, True))
 		c.columnLayout(parent = self.layoutOffset)
 		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
 		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
@@ -624,11 +628,16 @@ class OVLP:
 		if (_checkSelected or _checkGoal or _checkAim or _checkStartPos): return
 
 		c.currentTime(self.time[0])
+		# Mirrors
+		_mirror = [1, 1, 1]
+		if (c.checkBox(self.checkboxMirrorX, query = True, value = True)): _mirror[0] = -1
+		if (c.checkBox(self.checkboxMirrorY, query = True, value = True)): _mirror[1] = -1
+		if (c.checkBox(self.checkboxMirrorZ, query = True, value = True)): _mirror[2] = -1
 		# Get values from sliders
 		_values = [0, 0, 0]
-		_values[0] = self.sliderOffsetX.ValueCheck()
-		_values[1] = self.sliderOffsetY.ValueCheck()
-		_values[2] = self.sliderOffsetZ.ValueCheck()
+		_values[0] = self.sliderOffsetX.ValueCheck() * _mirror[0]
+		_values[1] = self.sliderOffsetY.ValueCheck() * _mirror[1]
+		_values[2] = self.sliderOffsetZ.ValueCheck() * _mirror[2]
 		# Set locGoal constraint offset
 		_goalAttributes = [0, 0, 0]
 		_goalAttributes[0] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
@@ -722,6 +731,10 @@ class OVLP:
 		self.sliderOffsetZ.ValueGet()
 	
 	def _ResetAllValues(self, *args):
+		c.checkBox(self.checkboxChain, edit = True, value = False) # TODO move to checkbox class
+		c.checkBox(self.checkboxLayer, edit = True, value = True) # TODO move to checkbox class
+		c.checkBox(self.checkboxLoop, edit = True, value = False) # TODO move to checkbox class
+		c.checkBox(self.checkboxClean, edit = True, value = True) # TODO move to checkbox class
 		self._ResetSimulation(True)
 		self._ResetOffset()
 	def _ResetSimulation(self, full=False, *args):
@@ -738,6 +751,9 @@ class OVLP:
 		self.sliderOffsetX.ValueReset()
 		self.sliderOffsetY.ValueReset()
 		self.sliderOffsetZ.ValueReset()
+		c.checkBox(self.checkboxMirrorX, edit = True, value = False) # TODO move to checkbox class
+		c.checkBox(self.checkboxMirrorY, edit = True, value = False) # TODO move to checkbox class
+		c.checkBox(self.checkboxMirrorZ, edit = True, value = False) # TODO move to checkbox class
 		self._ValuesSetOffset()
 	
 	### BAKE
