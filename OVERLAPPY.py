@@ -33,7 +33,9 @@ class OVLP:
 	# LOFT
 	loftFactor = 0.9
 	loftMinDistance = 5
+	
 	# SIMULATION SETTINGS # TODO: move to preset
+	checkboxesOptions = [False, True, False, True]
 	particleRadius = 20
 	particleConserve = 1
 	particleDrag = 0.01
@@ -41,6 +43,7 @@ class OVLP:
 	goalSmooth = 3
 	goalWeight = 0.5
 	nucleusTimeScale = 1
+	
 	# SLIDERS (field min/max, slider min/max)
 	rangePRadius = (0, float("inf"), 0, 50)
 	rangePConserve = (0, 1, 0, 1)
@@ -118,6 +121,103 @@ class OVLP:
 			c.deleteUI(OVLP.nameWindowMain)
 		self.windowMain = c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = True, widthHeight = (OVLP.windowWidth, OVLP.windowHeight * 6), closeCommand = self.Cleanup)
 		self.layoutMain = c.columnLayout(adjustableColumn = True, height = OVLP.windowHeight)
+
+		# CLASSES
+		class classCheckbox:
+			def __init__(self, label="label", value=False, command="pass", menuReset=True, enabled=True): # parent=self.layoutMain
+				self.value = value
+				self.checkbox = c.checkBox(label = label, value = value, changeCommand = command, enable = enabled)
+				c.popupMenu()
+				if (menuReset):
+					c.menuItem(label = "reset", command = self.Reset)
+			def Get(self, *args):
+				return c.checkBox(self.checkbox, query = True, value = True)
+			def Set(self, value=None, *args):
+				c.checkBox(self.checkbox, edit = True, value = value)
+			def Reset(self, *args):
+				c.checkBox(self.checkbox, edit = True, value = self.value)
+
+		class classSlider:
+			def __init__(self, label="label", attribute="", startName="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="pass", precision=3, menuReset=True, menuGet=True):
+				self.attribute = attribute
+				self.startName = startName
+				self.addSelectedName = nameAdd
+				self.value = value
+				self.command = command
+				self.precision = precision
+				self.markerColorDefault = OVLP.cGray
+				self.markerColorChanged = OVLP.cBlue
+				self.valueCached = 0;
+				c.flowLayout(parent = parent)
+				self.slider = c.floatSliderGrp(label = " " + label, value = self.value, changeCommand = self.command, dragCommand = self.command, fieldMinValue = fieldMin, fieldMaxValue = fieldMax, minValue = min, maxValue = max, field = True,
+														precision = self.precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]), enableKeyboardFocus = True)
+				c.popupMenu(parent = self.slider)
+				if (menuReset):
+					c.menuItem(label = "reset", command = self.Reset)
+				if (menuGet):
+					c.menuItem(label = "scan value", command = self.Scan)
+				self._marker = c.button(label = "", enable = 0, w = OVLP.markerWidth, backgroundColor = self.markerColorDefault)
+			def Get(self, *args):
+				return c.floatSliderGrp(self.slider, query = True, value = True)
+			def Set(self, value=None, *args):
+				if (value == None): _value = c.floatSliderGrp(self.slider, query = True, value = True)
+				else:
+					_value = value
+					c.floatSliderGrp(self.slider, edit = True, value = _value)
+					self.command()
+				# Marker update
+				if (_value != self.value):
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorChanged)
+				else:
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
+				# Check selected
+				_selectedName = _OVERLAPPY.selected
+				if (_selectedName == ""):
+					return
+				# Add suffix or not
+				_selectedName = _OVERLAPPY.ConvertText(_selectedName) # TODO _OVERLAPPY
+				if (self.addSelectedName):
+					_selectedName = self.startName + _selectedName
+				else:
+					_selectedName = self.startName
+				# Set attribute
+				try:
+					c.setAttr(_selectedName + self.attribute, _value)
+				except:
+					# print("Can't set value")
+					pass
+			def Reset(self, *args):
+				c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
+				c.floatSliderGrp(self.slider, edit = True, value = self.value)
+				self.command()
+			def Scan(self, *args):
+				_firstName = _OVERLAPPY.selected
+				if (_firstName == ""):
+					return
+				_firstName = _OVERLAPPY.ConvertText(_firstName)
+				if (self.addSelectedName):
+					_firstName = self.startName + _firstName
+				else:
+					_firstName = self.startName
+				# Get attribute
+				try:
+					# print(firstName + self._attribute)
+					_value = c.getAttr(_firstName + self.attribute)
+					c.floatSliderGrp(self.slider, edit = True, value = _value)
+				except:
+					# print("Can't get value")
+					return
+				# Marker update
+				if (round(_value, 3) != self.value):
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorChanged)
+				else:
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
+			def GetCached(self, *args):
+				return self.valueCached
+			def SetCached(self, *args):
+				self.valueCached = c.floatSliderGrp(self.slider, query = True, value = True)
+			def ResetCached(self, *args):
+				self.valueCached = 0
 
 		# HEAD MENU
 		c.menuBarLayout()
@@ -202,94 +302,11 @@ class OVLP:
 		# OPTIONS
 		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
 		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
-		self.checkboxChain = c.checkBox(label = "CHAIN")
-		self.checkboxLayer = c.checkBox(label = "LAYER", value = True, enable = 0)
-		self.checkboxLoop = c.checkBox(label = "LOOP", enable = 0)
-		self.checkboxClean = c.checkBox(label = "CLEAN", value = True)
+		self.checkboxChain = classCheckbox(label = "CHAIN", value = OVLP.checkboxesOptions[0], menuReset = True, enabled = True)
+		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, enabled = False)
+		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, enabled = False)
+		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, enabled = True)
 		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
-
-		# SLIDER CLASS
-		class classSlider: # TODO need refactoring
-			def __init__(self, label="label", attribute="", name="", nameAdd=True, value=1, fieldMin=0, fieldMax=1, min=0, max=1, parent=self.layoutMain, command="", precision=3, submenuReset=True, submenuGet=True):
-				self.attribute = attribute
-				self.name = name
-				self.nameAdd = nameAdd
-				self.value = value
-				self.ccCommand = command
-				self.precision = precision
-				self.markerColorDefault = OVLP.cGray
-				self.markerColorChanged = OVLP.cBlue
-				self.valueCached = 0;
-				c.flowLayout(parent = parent)
-				self.slider = c.floatSliderGrp(label = " " + label, value = self.value, changeCommand = self.ccCommand, dragCommand = self.ccCommand, fieldMinValue = fieldMin, fieldMaxValue = fieldMax, minValue = min, maxValue = max, field = True,
-														precision = self.precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]), enableKeyboardFocus = True)
-				c.popupMenu(parent = self.slider)
-				if (submenuReset):
-					c.menuItem(label = "reset", command = self.ValueReset)
-				if (submenuGet):
-					c.menuItem(label = "get value", command = self.ValueGet)
-				self._marker = c.button(label = "", enable = 0, w = OVLP.markerWidth, backgroundColor = self.markerColorDefault)
-			def ValueGet(self, *args):
-				_firstName = _OVERLAPPY.selected
-				if (_firstName == ""):
-					return
-				_firstName = _OVERLAPPY.ConvertText(_firstName)
-				if (self.nameAdd):
-					_firstName = self.name + _firstName
-				else:
-					_firstName = self.name
-				# Get attribute
-				try:
-					# print(firstName + self._attribute)
-					_value = c.getAttr(_firstName + self.attribute)
-					c.floatSliderGrp(self.slider, edit = True, value = _value)
-				except:
-					# print("Can't get value")
-					return
-				# Marker update
-				if (round(_value, 3) != self.value):
-					c.button(self._marker, edit = True, backgroundColor = self.markerColorChanged)
-				else:
-					c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
-			def ValueSet(self, value=None, *args):
-				if (value == None): _value = c.floatSliderGrp(self.slider, query = True, value = True)
-				else:
-					_value = value
-					c.floatSliderGrp(self.slider, edit = True, value = _value)
-					self.ccCommand()
-				# Marker update
-				if (_value != self.value):
-					c.button(self._marker, edit = True, backgroundColor = self.markerColorChanged)
-				else:
-					c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
-				# Check selected
-				_firstName = _OVERLAPPY.selected
-				if (_firstName == ""):
-					return
-				# Add suffix or not
-				_firstName = _OVERLAPPY.ConvertText(_firstName)
-				if (self.nameAdd):
-					_firstName = self.name + _firstName
-				else:
-					_firstName = self.name
-				# Set attribute
-				try:
-					c.setAttr(_firstName + self.attribute, _value)
-				except:
-					# print("Can't set value")
-					pass
-			def ValueReset(self, *args):
-				c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
-				c.floatSliderGrp(self.slider, edit = True, value = self.value)
-				self.ccCommand()
-			def ValueCheck(self, *args):
-				return c.floatSliderGrp(self.slider, query = True, value = True)
-			def ValueCachedGet(self, *args):
-				return self.valueCached
-			def ValueCachedSet(self, *args):
-				self.valueCached = c.floatSliderGrp(self.slider, query = True, value = True)
-			def ValueCachedReset(self, *args):
-				self.valueCached = 0
 
 		# SIMULATION SETTINGS
 		self.layoutSimulation = c.frameLayout(label = "SIMULATION", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
@@ -299,6 +316,15 @@ class OVLP:
 		c.menuItem(label = "Reset all sliders", command = partial(self._ResetSimulation, True))
 		c.menuItem(label = "Get values", command = self._GetSimulation)
 		c.columnLayout(parent = self.layoutSimulation)
+		
+		# self.sliderPRadius = classSlider(label = "Radius", attribute = "Shape.radius", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		# self.sliderPConserve = classSlider(label = "Conserve", attribute = "Shape.conserve", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		# self.sliderPDrag = classSlider(label = "Radius", attribute = "Shape.radius", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		# self.sliderPDamp = classSlider(label = "Radius", attribute = "Shape.radius", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		# self.sliderGSmooth = classSlider(label = "Radius", attribute = "Shape.radius", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		# self.sliderGWeight = classSlider(label = "Radius", attribute = "Shape.radius", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		# self.sliderNTimeScale = classSlider(label = "Radius", attribute = "Shape.radius", startName = OVLP.nameParticle, nameAdd = True, value = OVLP.particleRadius, fieldMin = OVLP.rangePRadius[0], fieldMax = OVLP.rangePRadius[1], min = OVLP.rangePRadius[2], max = OVLP.rangePRadius[3], parent = self.layoutSimulation, command = self._ValuesSetSimulation)
+		
 		self.sliderPRadius = classSlider("Radius", "Shape.radius", OVLP.nameParticle, True, OVLP.particleRadius, OVLP.rangePRadius[0], OVLP.rangePRadius[1], OVLP.rangePRadius[2], OVLP.rangePRadius[3], self.layoutSimulation, self._ValuesSetSimulation)
 		self.sliderPConserve = classSlider("Conserve", "Shape.conserve", OVLP.nameParticle, True, OVLP.particleConserve, OVLP.rangePConserve[0], OVLP.rangePConserve[1], OVLP.rangePConserve[2], OVLP.rangePConserve[3], self.layoutSimulation, self._ValuesSetSimulation)
 		self.sliderPDrag = classSlider("Drag", "Shape.drag", OVLP.nameParticle, True, OVLP.particleDrag, OVLP.rangePDrag[0], OVLP.rangePDrag[1], OVLP.rangePDrag[2], OVLP.rangePDrag[3], self.layoutSimulation, self._ValuesSetSimulation)
@@ -310,16 +336,16 @@ class OVLP:
 		# OFFSET SETTINGS
 		self.layoutOffset = c.frameLayout(label = "OFFSET", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
-		c.button(label = "RESET", command = self._ResetOffset, backgroundColor = OVLP.cYellow)
+		c.button(label = "RESET", command = self._ResetOffsets, backgroundColor = OVLP.cYellow)
 		c.popupMenu()
 		c.menuItem(label = "Get values", command = self._GetOffsets)
-		self.checkboxMirrorX = c.checkBox(label = "MIRROR X", changeCommand = partial(self._OffsetUpdate, True)) # TODO reset
-		self.checkboxMirrorY = c.checkBox(label = "MIRROR Y", changeCommand = partial(self._OffsetUpdate, True))
-		self.checkboxMirrorZ = c.checkBox(label = "MIRROR Z", changeCommand = partial(self._OffsetUpdate, True))
+		self.checkboxMirrorX = classCheckbox(label = "MIRROR X", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True)
+		self.checkboxMirrorY = classCheckbox(label = "MIRROR Y", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True)
+		self.checkboxMirrorZ = classCheckbox(label = "MIRROR Z", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True)
 		c.columnLayout(parent = self.layoutOffset)
-		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
-		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
-		self.sliderOffsetZ = classSlider("   Local Z", "_parentConstraint1.target[0].targetOffsetTranslateZ", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], self.layoutOffset, self._OffsetUpdate, submenuGet = True)
+		self.sliderOffsetX = classSlider("   Local X", "_parentConstraint1.target[0].targetOffsetTranslateX", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetX[0], OVLP.rangeOffsetX[1], OVLP.rangeOffsetX[2], OVLP.rangeOffsetX[3], self.layoutOffset, self._OffsetUpdate, menuGet = True)
+		self.sliderOffsetY = classSlider("   Local Y", "_parentConstraint1.target[0].targetOffsetTranslateY", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetY[0], OVLP.rangeOffsetY[1], OVLP.rangeOffsetY[2], OVLP.rangeOffsetY[3], self.layoutOffset, self._OffsetUpdate, menuGet = True)
+		self.sliderOffsetZ = classSlider("   Local Z", "_parentConstraint1.target[0].targetOffsetTranslateZ", OVLP.nameLocGoalTarget[0], True, 0, OVLP.rangeOffsetZ[0], OVLP.rangeOffsetZ[1], OVLP.rangeOffsetZ[2], OVLP.rangeOffsetZ[3], self.layoutOffset, self._OffsetUpdate, menuGet = True)
 
 		# DEV TOOLS
 		self.layoutDevTools = c.frameLayout(label = "DEV TOOLS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack, visible = False)
@@ -462,20 +488,20 @@ class OVLP:
 		c.setAttr(self.particle + ".overrideDisplayType", 2)
 
 		# Set simulation attributes
-		c.setAttr(self.particle + "Shape.radius", self.sliderPRadius.ValueCheck())
+		c.setAttr(self.particle + "Shape.radius", self.sliderPRadius.Get())
 		c.setAttr(self.particle + "Shape.solverDisplay", 1)
-		c.setAttr(self.particle + "Shape.conserve", self.sliderPConserve.ValueCheck())
-		c.setAttr(self.particle + "Shape.drag", self.sliderPDrag.ValueCheck())
-		c.setAttr(self.particle + "Shape.damp", self.sliderPDamp.ValueCheck())
-		c.setAttr(self.particle + "Shape.goalSmoothness", self.sliderGSmooth.ValueCheck())
-		c.setAttr(self.particle + "Shape.goalWeight[0]", self.sliderGWeight.ValueCheck())
+		c.setAttr(self.particle + "Shape.conserve", self.sliderPConserve.Get())
+		c.setAttr(self.particle + "Shape.drag", self.sliderPDrag.Get())
+		c.setAttr(self.particle + "Shape.damp", self.sliderPDamp.Get())
+		c.setAttr(self.particle + "Shape.goalSmoothness", self.sliderGSmooth.Get())
+		c.setAttr(self.particle + "Shape.goalWeight[0]", self.sliderGWeight.Get())
 
 		# Nucleus detection
 		self.nucleus = c.ls(type = "nucleus")[0]
 		c.parent(self.nucleus, OVLP.nameGroup)
-		self.sliderNTimeScale.name = self.nucleus
+		self.sliderNTimeScale.startName = self.nucleus
 		c.setAttr(self.nucleus + ".gravity", 0)
-		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.ValueCheck())
+		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.Get())
 		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO maybe need check start frame in other functions?
 		c.setAttr(self.nucleus + ".visibility", 0)
 
@@ -508,7 +534,7 @@ class OVLP:
 		self.loft[0] = c.circle(name = nameLoftStart, degree = 1, sections = 4, normal = [0, 1, 0])[0]
 		self.loft[1] = c.duplicate(self.loft[0], name = nameLoftEnd)[0]
 		_scale1 = 0.001
-		_scale2 = self.sliderPRadius.ValueCheck() * OVLP.loftFactor
+		_scale2 = self.sliderPRadius.Get() * OVLP.loftFactor
 		c.setAttr(self.loft[0] + ".scaleX", _scale1)
 		c.setAttr(self.loft[0] + ".scaleY", _scale1)
 		c.setAttr(self.loft[0] + ".scaleZ", _scale1)
@@ -581,9 +607,9 @@ class OVLP:
 		_nucleus = c.ls(type = "nucleus")
 		if (len(_nucleus) > 0):
 			self.nucleus = _nucleus[0]
-			self.sliderNTimeScale.name = self.nucleus
+			self.sliderNTimeScale.startName = self.nucleus
 		# Get sliders
-		self.sliderPRadius.ValueGet()
+		self.sliderPRadius.Scan()
 		self._GetSimulation()
 		self._GetOffsets()
 	def _SetupDelete(self, deselect=True, *args):
@@ -606,17 +632,17 @@ class OVLP:
 	def _OffsetUpdate(self, cacheReset=False, *args):
 		if (type(cacheReset) is float): cacheReset = False
 		if (cacheReset):
-			self.sliderOffsetX.ValueCachedReset()
-			self.sliderOffsetY.ValueCachedReset()
-			self.sliderOffsetZ.ValueCachedReset()
+			self.sliderOffsetX.ResetCached()
+			self.sliderOffsetY.ResetCached()
+			self.sliderOffsetZ.ResetCached()
 		# Check and set cached value
-		_checkX = self.sliderOffsetX.ValueCachedGet() != self.sliderOffsetX.ValueCheck()
-		_checkY = self.sliderOffsetY.ValueCachedGet() != self.sliderOffsetY.ValueCheck()
-		_checkZ = self.sliderOffsetZ.ValueCachedGet() != self.sliderOffsetZ.ValueCheck()
+		_checkX = self.sliderOffsetX.GetCached() != self.sliderOffsetX.Get()
+		_checkY = self.sliderOffsetY.GetCached() != self.sliderOffsetY.Get()
+		_checkZ = self.sliderOffsetZ.GetCached() != self.sliderOffsetZ.Get()
 		if (_checkX or _checkY or _checkZ):
-			self.sliderOffsetX.ValueCachedSet()
-			self.sliderOffsetY.ValueCachedSet()
-			self.sliderOffsetZ.ValueCachedSet()
+			self.sliderOffsetX.SetCached()
+			self.sliderOffsetY.SetCached()
+			self.sliderOffsetZ.SetCached()
 		else: return
 
 		self._ValuesSetOffset()
@@ -630,14 +656,14 @@ class OVLP:
 		c.currentTime(self.time[0])
 		# Mirrors
 		_mirror = [1, 1, 1]
-		if (c.checkBox(self.checkboxMirrorX, query = True, value = True)): _mirror[0] = -1
-		if (c.checkBox(self.checkboxMirrorY, query = True, value = True)): _mirror[1] = -1
-		if (c.checkBox(self.checkboxMirrorZ, query = True, value = True)): _mirror[2] = -1
+		if (self.checkboxMirrorX.Get()): _mirror[0] = -1
+		if (self.checkboxMirrorY.Get()): _mirror[1] = -1
+		if (self.checkboxMirrorZ.Get()): _mirror[2] = -1
 		# Get values from sliders
 		_values = [0, 0, 0]
-		_values[0] = self.sliderOffsetX.ValueCheck() * _mirror[0]
-		_values[1] = self.sliderOffsetY.ValueCheck() * _mirror[1]
-		_values[2] = self.sliderOffsetZ.ValueCheck() * _mirror[2]
+		_values[0] = self.sliderOffsetX.Get() * _mirror[0]
+		_values[1] = self.sliderOffsetY.Get() * _mirror[1]
+		_values[2] = self.sliderOffsetZ.Get() * _mirror[2]
 		# Set locGoal constraint offset
 		_goalAttributes = [0, 0, 0]
 		_goalAttributes[0] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
@@ -689,23 +715,23 @@ class OVLP:
 
 	### VALUES
 	def _ValuesSetSimulation(self, *args):
-		self.sliderPRadius.ValueSet()
-		self.sliderPConserve.ValueSet()
-		self.sliderPDrag.ValueSet()
-		self.sliderPDamp.ValueSet()
-		self.sliderGSmooth.ValueSet()
-		self.sliderGWeight.ValueSet()
-		self.sliderNTimeScale.ValueSet()
+		self.sliderPRadius.Set()
+		self.sliderPConserve.Set()
+		self.sliderPDrag.Set()
+		self.sliderPDamp.Set()
+		self.sliderGSmooth.Set()
+		self.sliderGWeight.Set()
+		self.sliderNTimeScale.Set()
 		self._LoftUpdate()
 	def _ValuesSetOffset(self, *args):
-		self.sliderOffsetX.ValueSet()
-		self.sliderOffsetY.ValueSet()
-		self.sliderOffsetZ.ValueSet()
+		self.sliderOffsetX.Set()
+		self.sliderOffsetY.Set()
+		self.sliderOffsetZ.Set()
 		self._LoftUpdate()
 	def _LoftUpdate(self, *args):
 		if (self.loft[1] == ""): return
 		if (not c.objExists(self.loft[1])): return
-		_scale = self.sliderPRadius.ValueCheck() * OVLP.loftFactor
+		_scale = self.sliderPRadius.Get() * OVLP.loftFactor
 		c.setAttr(self.loft[1] + ".scaleX", _scale)
 		c.setAttr(self.loft[1] + ".scaleY", _scale)
 		c.setAttr(self.loft[1] + ".scaleZ", _scale)
@@ -713,58 +739,63 @@ class OVLP:
 		else: c.setAttr(self.loft[2] + ".visibility", 1)
 	def _LoftGetDistance(self, *args):
 		_vector = [0, 0, 0]
-		_vector[0] = self.sliderOffsetX.ValueCheck()
-		_vector[1] = self.sliderOffsetY.ValueCheck()
-		_vector[2] = self.sliderOffsetZ.ValueCheck()
+		_vector[0] = self.sliderOffsetX.Get()
+		_vector[1] = self.sliderOffsetY.Get()
+		_vector[2] = self.sliderOffsetZ.Get()
 		return sqrt(pow(_vector[0], 2) + pow(_vector[1], 2) + pow(_vector[2], 2)) # Distance formula : √((x2 - x1)2 + (y2 - y1)2 + (z2 - z1)2)
 
 	def _GetSimulation(self, *args):
-		self.sliderPConserve.ValueGet()
-		self.sliderPDrag.ValueGet()
-		self.sliderPDamp.ValueGet()
-		self.sliderGSmooth.ValueGet()
-		self.sliderGWeight.ValueGet()
-		self.sliderNTimeScale.ValueGet()
+		self.sliderPConserve.Scan()
+		self.sliderPDrag.Scan()
+		self.sliderPDamp.Scan()
+		self.sliderGSmooth.Scan()
+		self.sliderGWeight.Scan()
+		self.sliderNTimeScale.Scan()
 	def _GetOffsets(self, *args):
-		self.sliderOffsetX.ValueGet()
-		self.sliderOffsetY.ValueGet()
-		self.sliderOffsetZ.ValueGet()
-	
+		self.sliderOffsetX.Scan()
+		self.sliderOffsetY.Scan()
+		self.sliderOffsetZ.Scan()
 	def _ResetAllValues(self, *args):
-		c.checkBox(self.checkboxChain, edit = True, value = False) # TODO move to checkbox class
-		c.checkBox(self.checkboxLayer, edit = True, value = True) # TODO move to checkbox class
-		c.checkBox(self.checkboxLoop, edit = True, value = False) # TODO move to checkbox class
-		c.checkBox(self.checkboxClean, edit = True, value = True) # TODO move to checkbox class
+		self.checkboxChain.Reset()
+		self.checkboxLayer.Reset()
+		self.checkboxLoop.Reset()
+		self.checkboxClean.Reset()
+		self._ResetOptions()
 		self._ResetSimulation(True)
-		self._ResetOffset()
+		self._ResetOffsets()
+	def _ResetOptions(self, *args):
+		self.checkboxChain.Reset()
+		self.checkboxLayer.Reset()
+		self.checkboxLoop.Reset()
+		self.checkboxClean.Reset()
 	def _ResetSimulation(self, full=False, *args):
 		if (full):
-			self.sliderPRadius.ValueReset()
-		self.sliderPConserve.ValueReset()
-		self.sliderPDrag.ValueReset()
-		self.sliderPDamp.ValueReset()
-		self.sliderGSmooth.ValueReset()
-		self.sliderGWeight.ValueReset()
-		self.sliderNTimeScale.ValueReset()
+			self.sliderPRadius.Reset()
+		self.sliderPConserve.Reset()
+		self.sliderPDrag.Reset()
+		self.sliderPDamp.Reset()
+		self.sliderGSmooth.Reset()
+		self.sliderGWeight.Reset()
+		self.sliderNTimeScale.Reset()
 		self._ValuesSetSimulation()
-	def _ResetOffset(self, *args):
-		self.sliderOffsetX.ValueReset()
-		self.sliderOffsetY.ValueReset()
-		self.sliderOffsetZ.ValueReset()
-		c.checkBox(self.checkboxMirrorX, edit = True, value = False) # TODO move to checkbox class
-		c.checkBox(self.checkboxMirrorY, edit = True, value = False) # TODO move to checkbox class
-		c.checkBox(self.checkboxMirrorZ, edit = True, value = False) # TODO move to checkbox class
+	def _ResetOffsets(self, *args):
+		self.checkboxMirrorX.Reset()
+		self.checkboxMirrorY.Reset()
+		self.checkboxMirrorZ.Reset()
+		self.sliderOffsetX.Reset()
+		self.sliderOffsetY.Reset()
+		self.sliderOffsetZ.Reset()
 		self._ValuesSetOffset()
 	
 	### BAKE
 	def _BakeLogic(self, parent, zeroOffsets=False, translation=True, deleteSetupLock=False, *args):
 		if (zeroOffsets):
-			_value1 = self.sliderOffsetX.ValueCheck()
-			_value2 = self.sliderOffsetY.ValueCheck()
-			_value3 = self.sliderOffsetZ.ValueCheck()
-			self.sliderOffsetX.ValueReset()
-			self.sliderOffsetY.ValueReset()
-			self.sliderOffsetZ.ValueReset()
+			_value1 = self.sliderOffsetX.Get()
+			_value2 = self.sliderOffsetY.Get()
+			_value3 = self.sliderOffsetZ.Get()
+			self.sliderOffsetX.Reset()
+			self.sliderOffsetY.Reset()
+			self.sliderOffsetZ.Reset()
 		# Start logic
 		if (translation): _attributes = OVLP.attrT
 		else: _attributes = OVLP.attrR
@@ -782,21 +813,21 @@ class OVLP:
 		c.copyKey(_clone, attribute = _attributes) # TODO filtered attributes
 		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
 		c.delete(_clone)
-		if (c.checkBox(self.checkboxClean, query = True, value = True)):
+		if (self.checkboxClean.Get()):
 			if (not deleteSetupLock):
 				self._SetupDelete()
 		# Restore offsets
 		if (zeroOffsets):
-			self.sliderOffsetX.ValueSet(_value1)
-			self.sliderOffsetY.ValueSet(_value2)
-			self.sliderOffsetZ.ValueSet(_value3)
+			self.sliderOffsetX.Set(_value1)
+			self.sliderOffsetY.Set(_value2)
+			self.sliderOffsetZ.Set(_value3)
 	def _BakeCheck(self, *args):
 		_selected = c.ls(selection = True)
 		if (len(_selected) == 0):
 			if (self.selected == ""): return None
 			return 0, None
 		else:
-			if (c.checkBox(self.checkboxChain, query = True, value = True)):
+			if (self.checkboxChain.Get()):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 			return len(_selected), _selected
@@ -840,7 +871,7 @@ class OVLP:
 			c.warning("You must select at least 1 object")
 			return
 		else:
-			if (c.checkBox(self.checkboxChain, query = True, value = True)):
+			if (self.checkboxChain.Get()):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 		_locators = []
