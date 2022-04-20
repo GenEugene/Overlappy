@@ -1,1328 +1,1006 @@
-################################################################################
-###### OVERLAPPY v0.1.1
-################################################################################
-### https://www.highend3d.com/maya/script/overlappy-for-maya-105076 - Overlappy page. Check updates and report bugs
-################################################################################
-""" TO DO    ||| FOR DEBUG ||| sys.exit() |||
-	- Gravity options
-	- Aim position offset
-	- Deselect shapes from list
-	- Installation
-	- Twist mode
-	- Loop mode upgrade
-	- Stop "ESC"
-	- Save prefs to file
-"""
-################################################################################
-### Import ###
-import maya.cmds as cmds
-import sys
-from datetime import datetime
-from inspect import currentframe, getframeinfo
+# Overlappy v2.0.0 for Maya 2022
+# Author Eugene Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
+# https://github.com/GenEugene/Overlappy
 
-### Class ###
-class TheOverlappy:
-	""""TheOverlappy" class is cool"""
-	class OverlappyObject:
-		""""OverlappyObject" class is amazing"""
-		
-		### Slider values ###
-		T_goal_smooth, T_time_scale, T_goal_weight = 1.5, 0.3, 0.5
-		R_goal_smooth, R_time_scale, R_goal_weight = 1.5, 0.3, 0.5
-		
-		goalSmooth_min, goalSmooth_limit, goalSmooth_max = 0.0, 4.0, 10.0
-		timeScale_min, timeScale_limit, timeScale_max = 0.01, 1.0, 10.0
-		goalWeight_min, goalWeight_max = 0.0, 1.0
-		
-		slider_height = 30
-		precision = 2
-		
-		## Checkboxes\Radial buttons
-		check_cycle = False
-		aim_vector_reverse = False
-		
-		default_mode = True
-		hierarchy_mode = False
-		splitChains_mode = False
-		splitChains_step = 2
-		
-		## Start and end scale simulation time
-		min_loop_factor, max_loop_factor = 1, 2
-		
-		## Particle
-		particle_radius = 0.253
-		particle_shape = 4
-		
-		## UI size
-		window_width = 330
-		sl_Width = 300
-		rW1 = 163
-		rW2 = 4
-		rW3 = 163
-		
-		## Set colors
-		frame_color_1 = (0.1, 0.1, 0.1)
-		frame_color_2 = (1, 0.4, 0.4)
-		
-		color_yellow = (1, 1, 0.5)
-		color_green = (0.4, 1, 0.4)
-		
-		color_blue = (0.4, 0.8, 1)
-		color_lightBlue = (0.5, 1, 1)
-		
-		color_orange = (1.0, 0.74, 0.39)
-		color_lightOrange = (1.0, 0.8, 0.7)
+import maya.cmds as c
+from math import pow, sqrt
+from functools import partial
+# import maya.mel as mel
+# import sys, os
 
-		color_red = (1, 0.4, 0.4)
-		
-		color_grey_1 = (0.8, 0.8, 0.8)
-		color_grey_2 = (0.6, 0.6, 0.6)
-		color_grey_3 = (0.4, 0.4, 0.4)
-		color_grey_4 = (0.3, 0.3, 0.3)
-		
-		end_color_1 = (0.9, 0.5, 0.5)
-		link_color_1 = (0.9, 0.55, 0.55)
-		link_color_2 = (0.9, 0.4, 0.4)
-		
-		## Logs
-		printLog_T_smooth = "Translation smooth ="
-		printLog_T_scale = "Translation scale ="
-		printLog_T_weight = "Translation weight ="
-		
-		printLog_R_smooth = "Rotation smooth ="
-		printLog_R_scale = "Rotation scale ="
-		printLog_R_weight = "Rotation weight ="
-		
-		printLog_cycle = "Looping animation ="
-		printLog_aimReverse = "Aim reverse ="
-		printLog_splitChains = "Split chains mode ="
-		printLog_hierarchy = "Hierarchy mode ="
-		printLog_resetAll = "Reset all values"
-		
-		myLog = "\tLOG:"
-		myMessage = "\tMESSAGE:"
-		myError = "\tERROR:"
-		myWarning = "\tWARNING:"
-		
-		## Layers
-		root_layer_name = "OVERLAPPY"
-		safe_layer_name = "SAVED_Overlaps"
-		prefix_base_layer = ["default_", "translate_", "rotate_"]
-		final_layer_name = prefix_base_layer[0] + "_layer"
-		
-		## Technical
-		simState = prefix_base_layer[0]
-		default_channels = [("x","y","z"), ("y","z"), ("x","z"), ("x","y")]
-		translate_attr_names = ["translateX", "translateY", "translateZ"]
-		rotate_attr_names = ["rotateX", "rotateY", "rotateZ"]
-		temp_obj_node = "temp_copyObj"
-		nonLocked_attributes = [] 
-		start_time, end_time = 0, 1
-		
-		## UI
-		main_window_name = 'OverlappyUI'
-		UI_layout_name = 'root_layout'
-		
-		T_layout_name = 'T_layout'
-		R_layout_name = 'R_layout'
-		CH1_layout_name = 'CH1_layout'
-		B1_layout_name = 'B1_layout'
-		about_layout_name = 'endColumn'
-		
-		T_sliderSmooth_name = "T_slider_smooth"
-		T_sliderScale_name = "T_slider_scale"
-		T_sliderWeight_name = "T_slider_weight"
-		
-		R_sliderSmooth_name = "R_slider_smooth"
-		R_sliderScale_name = "R_slider_scale"
-		R_sliderWeight_name = "R_slider_weight"
-		
-		cycle_checkbox_name = "cycle_checkbox"
-		aimReverse_checkbox_name = "aim_reverse_checkbox"
-		
-		default_rb_name = "rb1"
-		splitChains_rb_name = "rb2"
-		hierarchy_rb_name = "rb3"
-		
-		loopFactor_text_name = 'loopFactor_text'
-		splitChain_text_name = 'splitChain_text'
-		
-		## Labels
-		script_label = "Overlappy"
-		script_version = "v0.1.1"
-		main_window_label = "{0} {1}".format(script_label, script_version)
-		
-		TL_label = "TRANSLATION VALUES"
-		RL_label = "ROTATION VALUES"
-		CH1_label = "OPTIONS"
-		B1_label = "BUTTONS"
-		about_label = "LINKS AND TIPS"
-		
-		smooth_label = 'Smooth'
-		scale_label = 'Scale'
-		weight_label = 'Weight'
-		
-		TB_run_label = "RUN TRANSLATION BAKING"
-		RB_run_label = "RUN ROTATION BAKING"
-		Aim_reverse_label = "Aim reverse"
-		Cycle_checkbox_label = "Looping animation"
-		
-		radialHeader_label = 'Modes:'
-		default_rb_label = "Default mode"
-		splitChains_rb_label = "Split chains"
-		hierarchy_rb_label = "Hierarchy mode"
-		
-		reset_button_label = "RESET"
-		resetAll_button_label = "RESET ALL\nvalues"
-		delete_label = "DELETE\nmain layer"
-		hierarchy_label = "SELECT\nhierarchy"
-		move_label = "MOVE to\nsafe layer"
-		
-		## Annotations
-		goal_smooth_ann = "You can increase the maximum limit to 10.0 by entering the value manually"
-		time_scale_ann = "You can increase the maximum limit to 10.0 by entering the value manually"
-		goal_weight_ann = ""
-		
-		T_reset_ann = 'Reset all translation values'
-		R_reset_ann = 'Reset all rotation values'
-		CH1_reset_ann = 'Reset options'
-		resetAll_ann = 'Reset all values and options in script window'
-		
-		aim_reverse_ann = \
-		'Reorientation aim for rotation simulation. May be useful\
-		\nwhen rotation bake animation with incorrect flipped rotations.'
-		
-		cycle_checkbox_ann = \
-		'USE 60+ FPS\
-		\n\nStrong recomended to use animation minimum\
-		\nwith 1 phase before and after animation cycle.\
-		\n\nSimple way to do it just use pre and post infinity\
-		\nwith "Cycle" option in graph editor.\
-		\n\nAfter baking loop animation on layer will be set cycle infinity'
-		
-		hierarchyMode_checkbox_ann = \
-		'To use it, just select the root objects only.\n\
-		\nThe script will find all hierarchies of transforms inside the selected,\
-		\nand the simulation will process each chain separately'
-		
-		delete_ann = 'Delete main layer "OVERLAPPY" with all layers inside'
-		
-		hierarchy_ann = \
-		'Select transforms hierarchy (without shapes)\
-		\nIf you use this button, turn off Hierarchy checkbox'
-		
-		move_ann = \
-		'Move all keyed layers from "OVERLAPPY" layer to "SAVED_Overlaps".\
-		\n\nDELETE button cant delete saved layers.'
-		
-		loopFactor_ann = 'WARNING !!! More time will be spent to simulation loops\
-		\n\nNeed to increase value, if the first and the last frames dont match well enough'
-		
-		splitChains_ann = \
-		'Need to specify number of elements in each chain, then manually select objects.\
-		\nCount of selected objects must be a multiple of the specified number\
-		\n\nExamples:\
-		\n1. Set 2, selected 8 objects        obj1|obj2|obj3|obj4|obj5|obj6|obj7|obj8\
-		\n\tResult:\
-		\n\t- Chain1   obj1|obj2\
-		\n\t- Chain2   obj3|obj4\
-		\n\t- Chain3   obj5|obj6\
-		\n\t- Chain4   obj7|obj8\
-		\n2. Set 3, selected 6 objects        obj1|obj2|obj3|obj4|obj5|obj6\
-		\n\tResult:\
-		\n\t- Chain1   obj1|obj2|obj3\
-		\n\t- Chain2   obj4|obj5|obj6\
-		\n3. Set 4, selected 10 objects        obj1|obj2|obj3|obj4|obj5|obj6|obj7|obj8|obj9|obj10)\
-		\n\tResult:\
-		\n\t- Error: Count of selected objects must be a multiple of 4)'
-		
-		
-		## Text
-		aboutText = ("\
-		Report bugs and leave rewiew please", "vk.com/geneugene3d",\
-		"www.artstation.com/geneugene", "www.highend3d.com/users/geneugene",\
-		"www.highend3d.com/maya/script/overlappy-for-maya-105076",\
-		"To see tooltips go to maya preferences/interface/help/\
-		\nand activate 'Display ToolClips' checkbox")
-		
-		## Other declarations
-		list_objects = []
-		list_fixed = []
-		list_split = []
-		
-		base_locator = ""
-		base_aim_locator = ""
-		offset_aim_locator = ""
-		
-		goal_locator = ""
-		goal_aim_locator = ""
-		
-		goal_aim_locator_pos = ""
-		
-		np_name = ""
-		np_center = ""
-		np_render_type = ""
-		np_shape_radius = ""
-		np_goal_smooth = ""
-		np_goal_weight = ""
-		
-		nucleus_name = ""
-		nucleus_timeScale = ""
-		nucleus_start = ""
-		
-		final_layer_name = ""
-		nonLockedList = []
-		min_loop_time, max_loop_time = 0, 1
-		
-		selection_set = []
-		
-		## Progress bar
-		progressBar_step_value = 10
-		progressBar_name = "Overlappy_ProgressBar"
-		progressBar_text = "Please wait"
-		progressControl = None
-		
-		## Confirm dialog
-		text_report = 'Please SCREEN and REPORT this bug.'
-		logList = ['',]
-		
-		dontShow_hier = 1
-		dontShow_hierB = 1
-		
-		dontShow_hier_text =\
-		'Some selected objects has no hierarchy inside.\
-		\n\tSimulation cancelled for them:'
-		
-		
-		########################################################################
-		########################################################################
-		
-		
-		
-		### Reset
-		@classmethod
-		def reset_translation_sliders(cls, pr=True):
-			cmds.floatSliderGrp(obj.T_sliderSmooth_name, e = True,
-							min = cls.goalSmooth_min, max = cls.goalSmooth_limit,
-							fmx = cls.goalSmooth_max, v = cls.T_goal_smooth)
-			cmds.floatSliderGrp(obj.T_sliderScale_name, e = True,
-							min = cls.timeScale_min, max = cls.timeScale_limit,
-							fmx = cls.timeScale_max, v = cls.T_time_scale)
-			cmds.floatSliderGrp(obj.T_sliderWeight_name, e = True,
-							min = cls.goalWeight_min, max = cls.goalWeight_max,
-							v = cls.T_goal_weight)
-			
-			obj.T_goal_smooth = cls.T_goal_smooth
-			obj.T_time_scale = cls.T_time_scale
-			obj.T_goal_weight = cls.T_goal_weight
-			
-			if pr:
-				#print(obj.myMessage, obj.printLog_T_smooth, obj.T_goal_smooth)
-				#print(obj.myMessage, obj.printLog_T_scale, obj.T_time_scale)
-				#print(obj.myMessage, obj.printLog_T_weight, obj.T_goal_weight)
-				pass
-		
-		@classmethod
-		def reset_rotation_sliders(cls, pr=True):
-			cmds.floatSliderGrp(obj.R_sliderSmooth_name, e = True,
-							min = cls.goalSmooth_min, max = cls.goalSmooth_limit,
-							fmx = cls.goalSmooth_max, v = cls.R_goal_smooth)
-			cmds.floatSliderGrp(obj.R_sliderScale_name, e = True,
-							min = cls.timeScale_min, max = cls.timeScale_limit,
-							fmx = cls.timeScale_max, v = cls.R_time_scale)
-			cmds.floatSliderGrp(obj.R_sliderWeight_name, e = True,
-							min = cls.goalWeight_min, max = cls.goalWeight_max,
-							v = cls.R_goal_weight)
-			
-			obj.R_goal_smooth = cls.R_goal_smooth
-			obj.R_time_scale = cls.R_time_scale
-			obj.R_goal_weight = cls.R_goal_weight
-			
-			if pr:
-				#print(obj.myMessage, obj.printLog_R_smooth, obj.R_goal_smooth)
-				#print(obj.myMessage, obj.printLog_R_scale, obj.R_time_scale)
-				#print(obj.myMessage, obj.printLog_R_weight, obj.R_goal_weight)
-				pass
-		
-		@classmethod
-		def reset_options(cls, pr=True):
-			cmds.checkBox(obj.cycle_checkbox_name, e = True, v = cls.check_cycle)
-			cmds.checkBox(obj.aimReverse_checkbox_name, e = True, v = cls.aim_vector_reverse)
-			cmds.intField(obj.loopFactor_text_name, e = True, v = cls.min_loop_factor)
+class OVLP:
+	# NAMING
+	textTitle = "OVERLAPPY v2.0.0"
+	nameWindowMain = "__OverlappyWindow__"
+	nameGroup = "_OverlappyGroup_"
+	#
+	nameLocGoalTarget = ("_locGoal_", "_locTarget_")
+	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_")
+	nameParticle = "_particle_"
+	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
+	#
+	nameLayers = ("_OVLP_BASE_", "_OVLP_SAFE_", "OVLP_", "OVLPpos_", "OVLProt_")
+	#
+	nameBakedWorldLocator = "BakedWorldLocator_"
+	#
+	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
+	# WINDOW
+	windowWidth = 330
+	windowHeight = 27
+	lineHeight = 28
+	sliderWidth = (60, 60, 10)
+	markerWidth = 6
+	# LOFT
+	loftFactor = 0.9
+	loftMinDistance = 5
+	
+	# SIMULATION SETTINGS # TODO: move to preset
+	checkboxesOptions = [False, True, False, True]
+	particleRadius = 20
+	particleConserve = 1
+	particleDrag = 0.01
+	particleDamp = 0
+	goalSmooth = 3
+	goalWeight = 0.5
+	nucleusTimeScale = 1
+	
+	# SLIDERS (field min/max, slider min/max)
+	rangePRadius = (0, float("inf"), 0, 50)
+	rangePConserve = (0, 1, 0, 1)
+	rangePDrag = (0, 10, 0, 1)
+	rangePDamp = (0, 10, 0, 1)
+	rangeGSmooth = (0, 100, 0, 10)
+	rangeGWeight = (0, 1, 0, 1)
+	rangeNTimeScale = (0.001, 100, 0.001, 4)
+	rangeOffsetX = (float("-inf"), float("inf"), 0, 300)
+	rangeOffsetY = (float("-inf"), float("inf"), 0, 300)
+	rangeOffsetZ = (float("-inf"), float("inf"), 0, 300)
+	# COLORS
+	cLRed = (1, .7, .7)
+	cRed = (1, .5, .5)
+	cLOrange = (1, .75, .45)
+	cOrange = (1, .6, .3)
+	cYellow = (1, 1, .5)
+	cGreen = (.6, 1, .6)
+	cLBlue = (.5, .9, 1)
+	cBlue = (.3, .7, 1)
+	cPurple = (.81, .4, 1)
+	cWhite = (1, 1, 1)
+	cGray = (.5, .5, .5)
+	cDarkGray = (.3, .3, .3)
+	cBlack = (.15, .15, .15)
+	# CONSTANTS
+	attrT = ["tx", "ty", "tz"]
+	attrR = ["rx", "ry", "rz"]
+	attrS = ["sx", "sy", "sz"]
 
-			obj.check_cycle = cls.check_cycle
-			obj.min_loop_factor = cls.min_loop_factor
-			obj.aim_vector_reverse = cls.aim_vector_reverse
+	### MAIN
+	def __init__(self):
+		# VALUES
+		self.time = [0, 0, 0] # min, max, current
+		self.startPositionGoalParticle = [None, (0, 0, 0)]
+		# OBJECTS
+		self.selected = ""
+		self.locGoalTarget = ["", ""]
+		self.locAim = ["", "", ""]
+		self.particle = ""
+		self.nucleus = ""
+		self.loft = ["", "", ""]
+		self.layers = ["", ""]
+		# LAYOUTS
+		self.windowMain = None
+		self.layoutMain = None
+		self.layoutButtons = None
+		self.layoutBaking = None
+		self.layoutOptions = None
+		self.layoutSimulation = None
+		self.layoutOffset = None
+		self.layoutDevTools = None
+		# CHECKBOXES
+		self.checkboxChain = None
+		self.checkboxLayer = None
+		self.checkboxLoop = None
+		self.checkboxClean = None
+		self.checkboxMirrorX = None
+		self.checkboxMirrorY = None
+		self.checkboxMirrorZ = None
+		# SLIDERS
+		self.sliderPRadius = None
+		self.sliderPConserve = None
+		self.sliderPDrag = None
+		self.sliderPDamp = None
+		self.sliderGSmooth = None
+		self.sliderGWeight = None
+		self.sliderNTimeScale = None
+		self.sliderOffsetX = None
+		self.sliderOffsetY = None
+		self.sliderOffsetZ = None
+	def CreateUI(self):
+		# WINDOW
+		if c.window(OVLP.nameWindowMain, exists = True):
+			c.deleteUI(OVLP.nameWindowMain)
+		self.windowMain = c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = True, widthHeight = (OVLP.windowWidth, OVLP.windowHeight * 6), closeCommand = self.Cleanup)
+		self.layoutMain = c.columnLayout(adjustableColumn = True, height = OVLP.windowHeight)
 
-			cmds.radioButton(obj.default_rb_name, e = 1, sl = 1)
-			obj.default_mode = cls.default_mode
-			obj.hierarchy_mode = cls.hierarchy_mode
-			obj.splitChains_mode = cls.splitChains_mode
-			obj.splitChains_step = cls.splitChains_step
-			cmds.intField(obj.splitChain_text_name, e = True, v = cls.splitChains_step)
-			
-			if pr:
-				#print(obj.myMessage, obj.printLog_cycle, obj.check_cycle)
-				#print(obj.myMessage, obj.printLog_aimReverse, obj.aim_vector_reverse)
-				
-				#print(obj.myMessage, 'default_mode', obj.default_mode)
-				#print(obj.myMessage, 'hierarchy_mode', obj.hierarchy_mode)
-				#print(obj.myMessage, 'splitChains_mode', obj.splitChains_mode)
-				pass
-		
-		@classmethod
-		def reset_all(cls, pr=True):
-			obj.reset_translation_sliders(False)
-			obj.reset_rotation_sliders(False)
-			obj.reset_options(False)
-			if pr:
-				print(obj.myMessage, obj.printLog_resetAll)
-		
-		
-		
-		### Sliders events
-		@staticmethod
-		def switch_T_smooth():
-			obj.T_goal_smooth = cmds.floatSliderGrp(obj.T_sliderSmooth_name, q = True, v = True)
-			#print(obj.printLog_T_smooth, obj.T_goal_smooth)
-			pass
-		
-		@staticmethod
-		def switch_T_scale():
-			obj.T_time_scale = cmds.floatSliderGrp(obj.T_sliderScale_name, q = True, v = True)
-			#print(obj.printLog_T_scale, obj.T_time_scale)
-			pass
-		
-		@staticmethod
-		def switch_T_weight():
-			obj.T_goal_weight = cmds.floatSliderGrp(obj.T_sliderWeight_name, q = True, v = True)
-			#print(obj.printLog_T_weight, obj.T_goal_weight)
-			pass
-		
-		@staticmethod
-		def switch_R_smooth():
-			obj.R_goal_smooth = cmds.floatSliderGrp(obj.R_sliderSmooth_name, q = True, v = True)
-			#print(obj.printLog_R_smooth, obj.R_goal_smooth)
-			pass
-		
-		@staticmethod
-		def switch_R_scale():
-			obj.R_time_scale = cmds.floatSliderGrp(obj.R_sliderScale_name, q = True, v = True)
-			#print(obj.printLog_R_scale, obj.R_time_scale)
-			pass
-		
-		@staticmethod
-		def switch_R_weight():
-			obj.R_goal_weight = cmds.floatSliderGrp(obj.R_sliderWeight_name, q = True, v = True)
-			#print(obj.printLog_R_weight, obj.R_goal_weight)
-			pass
-		
-		
-		
-		### Checkboxes events
-		@staticmethod
-		def switch_check_cycle():
-			obj.check_cycle = cmds.checkBox(obj.cycle_checkbox_name, q = True, v = True)
-			#print(obj.printLog_cycle, obj.check_cycle)
-			pass
-			
-		@staticmethod
-		def switch_vector_reverse():
-			obj.aim_vector_reverse = cmds.checkBox(obj.aimReverse_checkbox_name, q = True, v = True)
-			#print(obj.printLog_aimReverse, obj.aim_vector_reverse)
-			pass
-		
-		
-		
-		### Radio buttons SWITCH MODE ###
-		@staticmethod
-		def switch_mode_default():
-			if cmds.radioButton(obj.default_rb_name, q = 1, sl = 1):
-				obj.default_mode = True
-			else:
-				obj.default_mode = False
-		
-		@staticmethod
-		def switch_mode_hierarchy():
-			if cmds.radioButton(obj.hierarchy_rb_name, q = 1, sl = 1):
-				obj.hierarchy_mode = True
-			else:
-				obj.hierarchy_mode = False
-		
-		@staticmethod
-		def switch_mode_splitChains():
-			if cmds.radioButton(obj.splitChains_rb_name, q = 1, sl = 1):
-				obj.splitChains_mode = True
-			else:
-				obj.splitChains_mode = False
-		
-		
-		@staticmethod
-		def min_loop_factor_change(button='none'):
-			if button == 'up':
-				cmds.intField(obj.loopFactor_text_name, e = True, v = obj.min_loop_factor + 1)
-			if button == 'down':
-				cmds.intField(obj.loopFactor_text_name, e = True, v = obj.min_loop_factor - 1)
-			obj.min_loop_factor = cmds.intField(obj.loopFactor_text_name, q = True, v = True)
-			#print('min_loop_factor =', obj.min_loop_factor)
-			pass
-		
-		@staticmethod
-		def split_chain_change(button='none'):
-			if button == 'up':
-				cmds.intField(obj.splitChain_text_name, e = True, v = obj.splitChains_step + 1)
-			if button == 'down':
-				cmds.intField(obj.splitChain_text_name, e = True, v = obj.splitChains_step - 1)
-			obj.splitChains_step = cmds.intField(obj.splitChain_text_name, q = True, v = True)
-		
-		
-		
-		### Buttons events ###
-		@staticmethod
-		def SelectTransformHierarchy(objName='', roots=1):
-			curRoots = cmds.ls(sl = True)
-			errObj = ''
-			cmds.select(hi = True)
-			transfList = cmds.ls(sl = True, typ = "transform", s = False)
-			if (len(transfList) > 1 and len(transfList) != len(curRoots)) or (len(transfList) == 1 and roots > 1):
-				cmds.select(cl = True)
-				for i in range(len(transfList)):
-					cmds.select(transfList[i], add = True)
-				if obj.simState == obj.prefix_base_layer[0] and obj.default_mode == False:
-					cmds.radioButton(obj.default_rb_name, e = 1, sl = 1)
-					obj.switch_mode_default()
-					obj.switch_mode_splitChains()
-					obj.switch_mode_hierarchy()
-					
-					__err = 'Default mode activated, its good combination with manual selected hierarchy'
-					print(obj.myWarning, __err)
-					if obj.dontShow_hierB == 1:
-						obj.confirmMessage(__err, obj.dontShow_hierB, 2, 'selTransHier')
-				return True
-			
-			elif len(transfList) == 1 or len(curRoots) == len(transfList):
-				for line in range(len(transfList)):
-					errObj = errObj + '\n- ' + ''.join(transfList[line])
-				__err = 'Need to select object with hierarchy inside:' + errObj
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
-				return False
-			else:
-				__err = 'Need to select 1 or more objects for select hierarchy'
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
-				return False
-			
-			
-		
-		### UI ###
-		@staticmethod
-		def confirmMessage(main_text, dontShow=0, typ=1, curDef='def'):
-			if typ == 1: mess = 'ERROR: '
-			if typ == 2: mess = 'WARNING: '
-		
-			if dontShow == 0: currentButtons = 'Ok'
-			if dontShow == 1: currentButtons = ['Ok', 'Dont show this again']
-		
-			confirm = cmds.confirmDialog(t = obj.script_label + ' message', m = mess + main_text,
-											b = currentButtons, db = 'Ok',
-											cb = 'Dont show this again')
-			if confirm == 'Ok':
-				#print('confirm = "Ok"')
-				pass
-			elif confirm == 'Dont show this again':
-				if curDef == 'printHier': obj.dontShow_hier = 2
-				elif curDef == 'selTransHier': obj.dontShow_hierB = 2
-			else:
-				#print('i dont know')
-				pass
-		
-		@staticmethod
-		def close_progressbar():
-			if cmds.window(obj.progressBar_name, exists = True):
-				cmds.deleteUI(obj.progressBar_name)
-		
-		@staticmethod
-		def run_progressbar(stepCount): # NEED TO REFACTOR
-			obj.close_progressbar()
-			
-			maxVal = 100
-			barWidth = (obj.rW1 + obj.rW2) * 2
-			barHeight = 30
-			
-			#winRes = cmds.window("MayaWindow", q = True, wh = True) # Get Maya window size
-			winLeftCorner = cmds.window(obj.main_window_name, q = True, tlc = True)
-			winLeftCorner[0] = winLeftCorner[0] - barHeight * 1.5
-			
-			if (stepCount >= 1):
-				obj.progressBar_step_value = maxVal / stepCount
-			
-			
-			cmds.window(obj.progressBar_name, title = obj.progressBar_text,
-																	s = False,
-																	rtf = True,
-																	tb = False)
-			cmds.columnLayout()
-			
-			obj.progressControl = cmds.progressBar(maxValue = maxVal,
-																w = barWidth,
-																h = barHeight)
-			
-			cmds.window(obj.progressBar_name, e = True, wh = (barWidth, barHeight))
-			cmds.windowPref(obj.progressBar_name, e = True, tlc = winLeftCorner)
-			
-			cmds.showWindow(obj.progressBar_name)
-		
-		@staticmethod
-		def resize_UI():
-			cmds.window(obj.main_window_name, e = True, wh = (10, 10), rtf = True)
-		
-		@staticmethod
-		def create_ui(): # NEED TO REFACTOR
-			if cmds.window(obj.main_window_name, exists = True):
-				cmds.deleteUI(obj.main_window_name)
-			obj.close_progressbar()
-			
-			## Variables
-			arrow_bw = 18
-			arrow_bh = 10
-			
-			## Window
-			cmds.window(obj.main_window_name, title = obj.main_window_label,
-														mxb = False, s = False)
-			cmds.window(obj.main_window_name, e = True, rtf = True,
-								wh = (10, 10), cc = 'obj.close_progressbar()')
-			cmds.columnLayout(obj.UI_layout_name, rs = 4, adj = True)
-			
-			## Translate layout ##
-			cmds.frameLayout(obj.T_layout_name, l = obj.TL_label, cll = 1,
-								bgc = obj.frame_color_1, parent = obj.UI_layout_name,
-								cc = ('obj.resize_UI()'))
-			
-			cmds.floatSliderGrp(obj.T_sliderSmooth_name, l = obj.smooth_label, f = True,
-								cc = ('obj.switch_T_smooth()'), pre = obj.precision,
-								w = obj.sl_Width, ann = obj.goal_smooth_ann,
-								cal = (1, "left"), cw3 = (45, 40, 10) )
-			
-			cmds.floatSliderGrp(obj.T_sliderScale_name, l = obj.scale_label, f = True,
-								cc = ('obj.switch_T_scale()'), pre = obj.precision,
-								w = obj.sl_Width, ann = obj.time_scale_ann,
-								cal = (1, "left"), cw3 = (45, 40, 10) )
-			
-			cmds.floatSliderGrp(obj.T_sliderWeight_name, l = obj.weight_label, f = True,
-								cc = ('obj.switch_T_weight()'), pre = obj.precision,
-								w = obj.sl_Width, ann = obj.goal_weight_ann,
-								cal = (1, "left"), cw3 = (45, 40, 10) )
-			
-			
-			cmds.rowColumnLayout(numberOfColumns = 3, columnWidth = [(1, obj.rW1),
-													(2, obj.rW2), (3, obj.rW3)])
-			
-			cmds.button(label = obj.reset_button_label, command = ('obj.reset_translation_sliders()'),
-								bgc = obj.color_yellow, h = obj.slider_height,
-								ann = obj.T_reset_ann)
-			
-			cmds.separator(h = obj.slider_height / 1.25, style = 'none')
-			
-			cmds.button(label = obj.TB_run_label,
-					command = ('obj.run_simulation(obj.prefix_base_layer[1])'),
-					bgc = obj.color_green, h = obj.slider_height)
-			
-			
-			
-			## Rotate layout ##
-			cmds.frameLayout(obj.R_layout_name, l = obj.RL_label, cll = 1,
-								bgc = obj.frame_color_1, parent = obj.UI_layout_name,
-								cc = ('obj.resize_UI()'))
-			
-			cmds.floatSliderGrp(obj.R_sliderSmooth_name, l = obj.smooth_label, f = True,
-								cc = ('obj.switch_R_smooth()'), pre = obj.precision,
-								w = obj.sl_Width, ann = obj.goal_smooth_ann,
-								cal = (1, "left"), cw3 = (45, 40, 10) )
-			
-			cmds.floatSliderGrp(obj.R_sliderScale_name, l = obj.scale_label, f = True,
-								cc = ('obj.switch_R_scale()'), pre = obj.precision,
-								w = obj.sl_Width, ann = obj.time_scale_ann,
-								cal = (1, "left"), cw3 = (45, 40, 10) )
-			
-			cmds.floatSliderGrp(obj.R_sliderWeight_name, l = obj.weight_label, f = True,
-								cc = ('obj.switch_R_weight()'), pre = obj.precision,
-								w = obj.sl_Width, ann = obj.goal_weight_ann,
-								cal = (1, "left"), cw3 = (45, 40, 10) )
-			
-			
-			cmds.rowColumnLayout(numberOfColumns = 3, columnWidth = [(1, obj.rW1),
-													(2, obj.rW2), (3, obj.rW3)])
-			
-			cmds.button(label = obj.reset_button_label,
-								command = ('obj.reset_rotation_sliders()'),
-								bgc = obj.color_yellow, h = obj.slider_height,
-								ann = obj.R_reset_ann)
-			
-			cmds.separator(h = obj.slider_height / 1.25, style = 'none')
-			
-			cmds.button(label = obj.RB_run_label,
-					command = ('obj.run_simulation(obj.prefix_base_layer[2])'),
-					bgc = obj.color_green, h = obj.slider_height)
-			
-			
-			
-			## Checkbox layout ##
-			cmds.frameLayout(obj.CH1_layout_name, l = obj.CH1_label, cll = 1,
-								bgc = obj.frame_color_1, p = obj.UI_layout_name,
-								cc = ('obj.resize_UI()'))
-			
-## NEED TO SOLVE
-			cHeight1 = obj.slider_height / 1.3
-## NEED TO SOLVE
-			
-			cmds.flowLayout('mode_layout', columnSpacing = 3, h = 70)
-			
-			col_1 = 70
-			col_2 = 123
-			col_3 = 400
-			
-			cmds.columnLayout(adj = True, p = 'mode_layout', w = col_1)
-			## Reset button
-			cmds.button(label = obj.reset_button_label,
-											command = ('obj.reset_options()'),
-											bgc = obj.color_yellow, h = cHeight1,
-											ann = obj.CH1_reset_ann)
-			
-			
-			## Looping animation and Aim reverse
-			cmds.columnLayout('column1', adj = True, p = 'mode_layout', w = col_2, bgc = obj.color_grey_1)
-			cmds.checkBox(obj.cycle_checkbox_name, label = obj.Cycle_checkbox_label,
-								h = cHeight1, cc = ('obj.switch_check_cycle()'),
-								ann = obj.cycle_checkbox_ann)
-			
-			
-			cmds.flowLayout(columnSpacing = 3, w = 500)
-			cmds.text(l = 'Min loop factor', h = 20, ann = obj.loopFactor_ann)
-			cmds.intField(obj.loopFactor_text_name, w = 16, min = 1, max = 5, s = 1,
-									cc = 'obj.min_loop_factor_change()', v = 1,
-									bgc = obj.color_grey_3, ann = obj.loopFactor_ann)
-			cmds.columnLayout()
-			cmds.button(label='^', w = arrow_bw, h = arrow_bh, bgc = obj.color_grey_3,
-										c = 'obj.min_loop_factor_change("up")',
-										ann = obj.loopFactor_ann)
-			cmds.button(label='v', w = arrow_bw, h = arrow_bh, bgc = obj.color_grey_4,
-										c = 'obj.min_loop_factor_change("down")',
-										ann = obj.loopFactor_ann)
-			
-			
-			cmds.separator(h = 3, style = 'in', p = 'column1')
-			
-			cmds.checkBox(obj.aimReverse_checkbox_name, label = obj.Aim_reverse_label,
-								cc = ('obj.switch_vector_reverse()'), h = 21,
-								ann = obj.aim_reverse_ann, p = 'column1')
-			
-			
-			
-			## Modes
-			cmds.columnLayout(p = 'mode_layout', w = col_3, bgc = obj.color_grey_2)
-			cmds.radioCollection()
-			cmds.text(l = obj.radialHeader_label, al = 'left')
-			
-			cmds.radioButton(obj.default_rb_name, l = obj.default_rb_label,
-				onc = 'obj.switch_mode_default()',
-				ofc = 'obj.switch_mode_default()')
-			
-			cmds.radioButton(obj.hierarchy_rb_name, l = obj.hierarchy_rb_label,
-				onc = 'obj.switch_mode_hierarchy()',
-				ofc = 'obj.switch_mode_hierarchy()',
-				ann = obj.hierarchyMode_checkbox_ann)
-			
-			
-			cmds.flowLayout(columnSpacing = 3, w = 500)
-			cmds.radioButton(obj.splitChains_rb_name, l = obj.splitChains_rb_label,
-				onc = 'obj.switch_mode_splitChains()',
-				ofc = 'obj.switch_mode_splitChains()', ann = obj.splitChains_ann)
-			
-			
-			cmds.intField(obj.splitChain_text_name, w = 25, min = 2, max = 99, s = 1,
-									cc = 'obj.split_chain_change()', v = 2,
-									bgc = obj.color_grey_3, ann = obj.splitChains_ann)
-			cmds.columnLayout()
-			cmds.button(label='^', w = arrow_bw, h = arrow_bh, bgc = obj.color_grey_3,
-											c = 'obj.split_chain_change("up")',
-											ann = obj.splitChains_ann)
-			cmds.button(label='v', w = arrow_bw, h = arrow_bh, bgc = obj.color_grey_4,
-											c = 'obj.split_chain_change("down")',
-											ann = obj.splitChains_ann)
-			
-			
-			
-			
-			## Button layout ##
-			cmds.frameLayout(obj.B1_layout_name, l = obj.B1_label, cll = 1, bgc = obj.frame_color_1,
-										parent = obj.UI_layout_name, cc = ('obj.resize_UI()'))
-## NEED TO SOLVE
-			columns_count2 = 5
-			cWraw2 = obj.window_width / columns_count2
-## NEED TO SOLVE
-			
-			cmds.gridLayout(nc = 5, cwh = (cWraw2, obj.slider_height),
-												p = obj.B1_layout_name)
-			## Cell #1 ##
-			cmds.button(label = obj.resetAll_button_label, command = ('obj.reset_all()'),
-								bgc = obj.color_yellow, h = obj.slider_height, ann = obj.resetAll_ann)
-			## Cell #2 ##
-			cmds.button(label = obj.delete_label, command = ('obj.delete_overlappy_layer()'),
-								bgc = obj.color_red, h = obj.slider_height, ann = obj.delete_ann)
-			## Cell #3 ##
-			cmds.button(label = "", command = ('print("button 2")'), en = False,
-								h = obj.slider_height, ann = "")
-			## Cell #4 ##
-			cmds.button(label = obj.hierarchy_label, command = ('obj.SelectTransformHierarchy()'),
-									bgc = obj.color_orange, en = True, h = obj.slider_height,
-									ann = obj.hierarchy_ann)
-			## Cell #5 ##
-			cmds.button(label = obj.move_label, command = ('obj.move_layers_to_safe()'),
-									bgc = obj.color_blue, h = obj.slider_height,
-									ann = obj.move_ann)
-			
-			
-			## About layout ##
-			cmds.columnLayout(obj.about_layout_name, rs = 4, adj = True,
-								parent = obj.UI_layout_name, bgc = obj.end_color_1)
-			cmds.frameLayout(l = obj.about_label, cll = 1, bgc = obj.frame_color_2,
-								cl = 1, p = obj.about_layout_name, cc = ('obj.resize_UI()'))
-			cmds.text(obj.aboutText[5], h = 40, bgc = obj.color_green)
-			cmds.text(obj.aboutText[0], h = 20, bgc = obj.color_yellow)
-			cmds.text(obj.aboutText[1], hl = True, h = 20, bgc = obj.link_color_1)
-			cmds.text(obj.aboutText[2], hl = True, h = 20, bgc = obj.link_color_1)
-			cmds.text(obj.aboutText[3], hl = True, h = 20, bgc = obj.link_color_2)
-			cmds.text(obj.aboutText[4], hl = True, h = 20, bgc = obj.link_color_2)
-			
-			
-			cmds.showWindow(obj.main_window_name)
-		
-		
-		
-		### Playback setup ###
-		@staticmethod
-		def playback_range_initialization():
-			# Get min anim range
-			obj.start_time = cmds.playbackOptions(q = True, min = True)
-			# Get max anim range
-			obj.end_time = cmds.playbackOptions(q = True, max = True)
-			
-			offset_time = obj.end_time - obj.start_time
-			
-			obj.min_loop_time = obj.start_time - offset_time * obj.min_loop_factor
-			obj.max_loop_time = obj.start_time + offset_time * obj.max_loop_factor
-		
-		@staticmethod
-		def reset_range_time():
-			cmds.playbackOptions(e = True, min = obj.start_time, max = obj.end_time)
-			cmds.currentTime(obj.start_time)
-		
-		@staticmethod
-		def set_time_to_start(): # Only for cycles
-			cmds.currentTime(obj.min_loop_time)
-		
-		
-		
-		### Main methods ###
-		@staticmethod
-		def create_overlappy_layer():
-			if(cmds.objExists(obj.root_layer_name)):
-				#print(myMessage, root_layer_name, "layer already exists")
-				pass
-			else:
-				#print(myLog, root_layer_name, "layer created")
-				cmds.animLayer(obj.root_layer_name, o = True)
-		
-		@staticmethod
-		def delete_overlappy_layer():
-			if (cmds.objExists(obj.root_layer_name)):
-				cmds.delete(obj.root_layer_name)
-				print(obj.myMessage, obj.root_layer_name, "layer deleted")
-			else:
-				obj.confirmMessage(obj.root_layer_name + ' layer not created yet')
-		
-		@staticmethod
-		def move_layers_to_safe():
-			if(cmds.objExists(obj.root_layer_name)):
-				obj.playback_range_initialization()
-				# Get list of all final layers into OVERLAPPY layer
-				obj.layerList1 = cmds.animLayer(obj.root_layer_name, q = True, c = True)
-				if obj.layerList1 == None:
-					__err = obj.root_layer_name + ' has no layers inside'
-					print(obj.myError, __err)
-					obj.confirmMessage(__err)
+		# CLASSES
+		class classCheckbox:
+			def __init__(self, label="label", value=False, command="pass", menuReset=True, enabled=True, ccResetAll="pass"):
+				self.value = value
+				self.checkbox = c.checkBox(label = label, value = value, changeCommand = command, enable = enabled)
+				c.popupMenu()
+				if (menuReset):
+					c.menuItem(label = "reset current", command = self.Reset)
+					c.menuItem(label = "reset all", command = ccResetAll)
+			def Get(self, *args):
+				return c.checkBox(self.checkbox, query = True, value = True)
+			def Set(self, value=None, *args):
+				c.checkBox(self.checkbox, edit = True, value = value)
+			def Reset(self, *args):
+				c.checkBox(self.checkbox, edit = True, value = self.value)
+
+		class classSlider:
+			def __init__(self, label="label", attribute="", startName="", nameAdd=True, value=0, minMax=[0, 1, 0, 1], parent=self.layoutMain, command="pass", precision=3, menuReset=True, menuScan=True, ccResetAll="pass", ccScanAll="pass"):
+				self.attribute = attribute
+				self.startName = startName
+				self.addSelectedName = nameAdd
+				self.value = value
+				self.command = command
+				self.precision = precision
+				self.markerColorDefault = OVLP.cGray
+				self.markerColorChanged = OVLP.cBlue
+				self.valueCached = 0;
+				c.flowLayout(parent = parent)
+				self.slider = c.floatSliderGrp(label = " " + label, value = self.value, changeCommand = self.command, dragCommand = self.command, fieldMinValue = minMax[0], fieldMaxValue = minMax[1], minValue = minMax[2], maxValue = minMax[3], field = True,
+														precision = self.precision, width = OVLP.windowWidth - OVLP.markerWidth, columnAlign = (1, "left"), columnWidth3 = (OVLP.sliderWidth[0], OVLP.sliderWidth[1], OVLP.sliderWidth[2]), enableKeyboardFocus = True)
+				c.popupMenu(parent = self.slider)
+				if (menuReset):
+					c.menuItem(label = "reset current", command = self.Reset)
+					c.menuItem(label = "reset all", command = ccResetAll)
+				if (menuScan):
+					c.menuItem(divider = True)
+					c.menuItem(label = "scan current", command = self.Scan)
+					c.menuItem(label = "scan all", command = ccScanAll)
+				self._marker = c.button(label = "", enable = 0, w = OVLP.markerWidth, backgroundColor = self.markerColorDefault)
+			def Get(self, *args):
+				return c.floatSliderGrp(self.slider, query = True, value = True)
+			def Set(self, value=None, *args):
+				if (value == None): _value = c.floatSliderGrp(self.slider, query = True, value = True)
 				else:
-					if len(obj.layerList1) == 0:
-						__err = 'No layers with animation keys'
-						print(obj.myError, __err)
-						obj.confirmMessage(__err)
-					else:
-						if cmds.objExists(obj.safe_layer_name):
-							pass
-						else: 
-							cmds.animLayer(obj.safe_layer_name)
-						for i in range(len(obj.layerList1)):
-							obj.temp_list = cmds.ls(obj.layerList1[i] + "Safe_*")
-							if len(obj.temp_list) == 0:
-								obj.final_safe_layer_name = obj.layerList1[i] + "Safe_1"
-							else:
-								## 1. Get index of tip number ##
-								find_number_pos = int(obj.temp_list[-1].find("Safe_")) + 5
-								## 2. Get value of tip number ##
-								find_number_val = obj.temp_list[-1][find_number_pos:]
-								## 3. Increment value of tip number ##
-								increment_number = int(find_number_val) + 1
-								obj.final_safe_layer_name = obj.layerList1[i] + "Safe_" + str(increment_number)
-							cmds.rename(obj.layerList1[i], obj.final_safe_layer_name)
-							cmds.animLayer(obj.final_safe_layer_name, e = True, p = obj.safe_layer_name)
-						cmds.delete(obj.root_layer_name)
-						print(obj.myMessage, obj.root_layer_name, "layer deleted")
-			else:
-				__err = obj.root_layer_name + ' layer not created, nothing to move.'
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
-		
-		@staticmethod
-		def replaceSymbols():
-			for i in range(len(obj.list_fixed)):
-				obj.list_fixed[i] = obj.list_fixed[i].replace("|", "_")
-				obj.list_fixed[i] = obj.list_fixed[i].replace(":", "_")
-		
-		@staticmethod
-		def get_nonLocked_attributes(i): # and duplicate transform node
-			obj.reset_range_time()
-			if obj.check_cycle:
-				obj.set_time_to_start()
-			
-			temp_particle_attrs = [obj.T_goal_smooth, obj.T_goal_weight, obj.T_time_scale,
-							   obj.R_time_scale, obj.R_goal_weight, obj.R_goal_smooth]
-			
-			if obj.simState == obj.prefix_base_layer[1]:
-				attrX = obj.list_objects[i] + '.translateX'
-				attrY = obj.list_objects[i] + '.translateY'
-				attrZ = obj.list_objects[i] + '.translateZ'
-				temp_constraint_parent = obj.goal_aim_locator
-				temp_locked_names = obj.translate_attr_names
-				temp_index = [1, 0, 2, 0, 3, 0]
-			
-			elif obj.simState == obj.prefix_base_layer[2]:
-				attrX = obj.list_objects[i] + '.rotateX'
-				attrY = obj.list_objects[i] + '.rotateY'
-				attrZ = obj.list_objects[i] + '.rotateZ'
-				temp_constraint_parent = obj.offset_aim_locator
-				temp_locked_names = obj.rotate_attr_names
-				temp_index = [0, 1, 0, 2, 0, 3]
-				temp_particle_attrs.reverse()
-			
-			else:
-				frameinfo = getframeinfo(currentframe())
-				ln = '\n' + obj.text_report + ' Line {0}'.format(frameinfo.lineno - 2)
-				__err = 'get_nonLocked_attributes( ) state error #1.' + ln
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
-			
-			cmds.setAttr(obj.np_goal_smooth, temp_particle_attrs[0])
-			cmds.setAttr(obj.np_goal_weight, temp_particle_attrs[1])
-			cmds.setAttr(obj.nucleus_timeScale, temp_particle_attrs[2])
-			cmds.setAttr(obj.np_render_type, obj.particle_shape)
-			cmds.setAttr(obj.np_shape_radius, obj.particle_radius)
-			cmds.setAttr(obj.nucleus_start, obj.start_time)
-			
-			## Get lock state bool ##
-			lockX = cmds.getAttr(attrX, lock = True)
-			lockY = cmds.getAttr(attrY, lock = True)
-			lockZ = cmds.getAttr(attrZ, lock = True)
-			
-			if lockX and lockY and lockZ == True:
-				obj.cleaning(i)
-				if cmds.animLayer(obj.root_layer_name, q = True, c = True) == None:
-					obj.delete_overlappy_layer()
-					#print(myError, root_layer_name, "has no layers inside")
+					_value = value
+					c.floatSliderGrp(self.slider, edit = True, value = _value)
+					self.command()
+				# Marker update
+				if (_value != self.value):
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorChanged)
 				else:
-					#print(myLog, root_layer_name, "has layers inside")
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
+				# Check selected
+				_selectedName = _OVERLAPPY.selected
+				if (_selectedName == ""):
+					return
+				# Add suffix or not
+				_selectedName = _OVERLAPPY.ConvertText(_selectedName) # TODO _OVERLAPPY
+				if (self.addSelectedName):
+					_selectedName = self.startName + _selectedName
+				else:
+					_selectedName = self.startName
+				# Set attribute
+				try:
+					c.setAttr(_selectedName + self.attribute, _value)
+				except:
+					# print("Can't set value")
 					pass
-					
-				print(obj.myError, "All required attributes are locked")
-			else:
-				#print(myLog, "Required attributes are available")
-				
-				cmds.duplicate(obj.list_objects[i], po = True, n = obj.temp_obj_node)
-				
-				del(obj.nonLocked_attributes[:])
-				
-				
-				mOffset = True
-				
-				if (lockX != True):
-					obj.nonLocked_attributes.append(temp_locked_names[0])
-					cmds.parentConstraint(temp_constraint_parent, obj.temp_obj_node, mo = mOffset,
-												st = obj.default_channels[temp_index[0]],
-												sr = obj.default_channels[temp_index[1]], w = 1)
-				if (lockY != True):
-					obj.nonLocked_attributes.append(temp_locked_names[1])
-					cmds.parentConstraint(temp_constraint_parent, obj.temp_obj_node, mo = mOffset,
-												st = obj.default_channels[temp_index[2]],
-												sr = obj.default_channels[temp_index[3]], w = 1)
-				if (lockZ != True):
-					obj.nonLocked_attributes.append(temp_locked_names[2])
-					cmds.parentConstraint(temp_constraint_parent, obj.temp_obj_node, mo = mOffset,
-												st = obj.default_channels[temp_index[4]],
-												sr = obj.default_channels[temp_index[5]], w = 1)
-				
-				obj.create_other_layers(i)
-				obj.baking_to_temp_object()
-				obj.copyPaste_main_animation(i)
-				obj.cleaning(i)
-		
-		@staticmethod
-		def create_other_layers(i):
-			if obj.simState == obj.prefix_base_layer[1]:
-				obj.final_layer_name = obj.prefix_base_layer[1] + obj.list_fixed[i] + "_layer"
-			elif obj.simState == obj.prefix_base_layer[2]:
-				obj.final_layer_name = obj.prefix_base_layer[2] + obj.list_fixed[i] + "_layer"
-			else:
-				obj.final_layer_name = "error" + obj.list_fixed[i] + "_layer"
-				
-				frameinfo = getframeinfo(currentframe())
-				ln = '\n' + obj.text_report + '\nLine {0}'.format(frameinfo.lineno - 2)
-				__err = 'create_other_layers( ) state error #2' + ln
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
-			
-			obj.nonLockedList = [] # Clean attr list
-			for x in range(len(obj.nonLocked_attributes)):
-				obj.nonLockedList.append(obj.list_objects[i] + "." + obj.nonLocked_attributes[x])
-			
-			if (cmds.objExists(obj.final_layer_name)):
-				cmds.delete(obj.final_layer_name)
-				cmds.animLayer(obj.final_layer_name, o = True, p = obj.root_layer_name)
-			else:
-				cmds.animLayer(obj.final_layer_name, o = True, p = obj.root_layer_name)
-		
-		@staticmethod
-		def baking_to_temp_object():
-			if(obj.check_cycle): 
-				#print(myLog, "Cycled baking")
-				cmds.setAttr(obj.nucleus_start, obj.min_loop_time)
-				cmds.bakeResults(obj.temp_obj_node, t = (obj.min_loop_time, obj.max_loop_time),
-									sm = True, at = obj.nonLocked_attributes)
-			else:
-				#print(myLog, "Linear baking")
-				cmds.bakeResults(obj.temp_obj_node, t = (obj.start_time, obj.end_time),
-									sm = True, at = obj.nonLocked_attributes)
-		
-		@staticmethod
-		def copyPaste_main_animation(i):
-			# Set keys to main object before simulation (experimental)
-			#cmds.setKeyframe(obj.list_objects[i], at = obj.nonLocked_attributes)
-			cmds.animLayer(obj.final_layer_name, e = True, at = obj.nonLockedList)
-			cmds.select(obj.temp_obj_node, r = True)
-			
-			if (obj.check_cycle):
-				#print(myLog, 'Infinity changed to "Cycle"')
-				cmds.cutKey(time = (obj.min_loop_time, obj.start_time - 1))
-				cmds.cutKey(time = (obj.end_time + 1, obj.max_loop_time))
-				cmds.setInfinity(pri = "cycle", poi = "cycle")
-			else:
-				#print(myLog, 'Infinity changed to "Constant"')
-				cmds.setInfinity(pri = "constant", poi = "constant")
-			
-			temp_copyKey = cmds.copyKey(obj.temp_obj_node, at = obj.nonLocked_attributes)
-			cmds.pasteKey(obj.list_objects[i], o = "replace", al = obj.final_layer_name, at = obj.nonLocked_attributes)
-		
-		@staticmethod
-		def cleaning(i):
-			if obj.simState == obj.prefix_base_layer[1]:
-				cmds.delete(obj.goal_aim_locator, obj.goal_locator, obj.np_name, obj.nucleus_name)
-				if cmds.objExists(obj.temp_obj_node):
-					cmds.delete(obj.temp_obj_node)
-			elif obj.simState == obj.prefix_base_layer[2]:
-				cmds.delete(obj.base_locator, obj.base_aim_locator, obj.goal_aim_locator, obj.goal_locator, obj.np_name, obj.nucleus_name)
-				if cmds.objExists(obj.temp_obj_node):
-					cmds.delete(obj.temp_obj_node)
-			else:
-				frameinfo = getframeinfo(currentframe())
-				ln = '\n' + obj.text_report + ' Line {0}'.format(frameinfo.lineno - 2)
-				__err = 'cleaning( ) state error #3' + ln
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
-			obj.reset_range_time()
-		
-		
-		
-		### Main scripts ###
-		@staticmethod
-		def main_start():
-			obj.playback_range_initialization()
-			obj.reset_range_time()
-			
-			obj.list_objects = cmds.ls(sl = True)
-			obj.list_fixed = obj.list_objects[:]
-		
-		@staticmethod
-		def main_set_names(i):
-			if obj.simState == obj.prefix_base_layer[2]:
-				obj.base_locator = obj.list_fixed[i] + "_base_loc"
-				obj.base_aim_locator = obj.list_fixed[i] + "_base_aim_loc"
-				obj.offset_aim_locator = obj.list_fixed[i] + "_offset_aim_loc"
-			
-			obj.goal_locator = obj.list_fixed[i] + "_goal_loc"
-			obj.goal_aim_locator = obj.list_fixed[i] + "_aim_loc"
-			
-			obj.goal_aim_locator_pos = obj.goal_aim_locator + ".translate"
-			
-			obj.np_name = obj.list_fixed[i] + "_temp_part" # nParticle name
-			obj.np_center = obj.np_name + ".center"
-			obj.np_render_type = obj.np_name + "Shape.particleRenderType"
-			obj.np_shape_radius = obj.np_name + "Shape.radius"
-			obj.np_goal_smooth = obj.np_name + "Shape.goalSmoothness"
-			obj.np_goal_weight = obj.np_name + "Shape.goalWeight[0]"
-			
-			obj.nucleus_name = "nucleus1"
-			obj.nucleus_timeScale = obj.nucleus_name + ".timeScale"
-			obj.nucleus_start = obj.nucleus_name + ".startFrame"
-		
-		@staticmethod
-		def main_translate_logic(i):
-			## Create main logic ##
-			cmds.spaceLocator(n = obj.goal_locator)
-			cmds.matchTransform(obj.goal_locator, obj.list_objects[i], pos = True)
-			objC = cmds.getAttr(obj.goal_locator + ".translate")
-			
-			cmds.nParticle(p = objC, n = obj.np_name, c = 1)
-			cmds.goal(obj.np_name, w = obj.T_goal_weight, utr = 1, g = obj.goal_locator)
-			
-			cmds.parent(obj.goal_locator, obj.list_objects[i], r = True) #
-			cmds.matchTransform(obj.goal_locator, obj.list_objects[i], pos = True) #
-			
-			cmds.duplicate(obj.goal_locator, rr = True, n = obj.goal_aim_locator)
-			cmds.parent(obj.goal_aim_locator, w = True)
-			cmds.connectAttr(obj.np_center, obj.goal_aim_locator_pos, f = True)
-			
-		@staticmethod
-		def main_rotate_logic(i):
-			#### Create main logic ####
-			if obj.aim_vector_reverse: obj.rotAimVector = -1
-			else: obj.rotAimVector = 1
-			
-			## Create locators ##
-			cmds.spaceLocator(n = obj.base_locator)
-			cmds.matchTransform(obj.base_locator, obj.list_objects[i], pos = True, rot = True)
-			
-			cmds.aimConstraint(obj.list_objects[i+1], obj.base_locator, w = 1,
-									aim = (0, 1, 0), u = (0, 1, 0),
-									wut = "vector", wu = (0, 0, 1))
-			cmds.delete(obj.base_locator + "_aimConstraint1")
-			
-			cmds.duplicate(obj.base_locator, n = obj.base_aim_locator)
-			cmds.parent(obj.base_aim_locator, obj.base_locator, a = True)
-			
-			cmds.duplicate(obj.base_aim_locator, n = obj.offset_aim_locator)
-			
-			cmds.parentConstraint(obj.list_objects[i], obj.base_locator, mo = True, w = 1)
-			
-			cmds.spaceLocator(n = obj.goal_locator)
-			cmds.matchTransform (obj.goal_locator, obj.list_objects[i + 1], pos = True, rot = True)
-			cmds.parentConstraint(obj.list_objects[i + 1], obj.goal_locator, mo = True, w = 1)
-			
-			cmds.spaceLocator(n = obj.goal_aim_locator)
-			
-			## Create particle and nucleus ##
-			goal_position = cmds.getAttr(obj.goal_locator + ".translate")
-			cmds.nParticle(p = goal_position, n = obj.np_name, c = 1)
-			cmds.goal(obj.np_name, w = obj.T_goal_weight, utr = 1, g = obj.goal_locator)
-			
-			## Create connections ##
-			cmds.connectAttr(obj.np_center, obj.goal_aim_locator_pos, f = True)
-			
-			cmds.aimConstraint(obj.goal_aim_locator, obj.base_aim_locator, w = 1,
-									aim = (0, obj.rotAimVector, 0), u = (0, 1, 0),
-									wut = "vector", wu = (0, 1, 0), sk = "y")
-			
-			cmds.parentConstraint(obj.base_aim_locator, obj.offset_aim_locator,
-											mo = True, st=["x","y","z"], w = 1)
-		
-		@staticmethod
-		def main_last_part(i):
-			## Layers, connections, baking, copy/paste ##
-			obj.get_nonLocked_attributes(i)
-			
-			cmds.select(d = True)
-			cmds.progressBar(obj.progressControl, edit = True, step = obj.progressBar_step_value)
-		
-		@staticmethod
-		def main_end():
-			cmds.select(cl = True)
-			for l in obj.selection_set:
-				cmds.select(l, add = True)
-			obj.close_progressbar()
-		
-		
-		
-		### Simulation ###
-		@staticmethod
-		def run_simulation(currentState):
-			start_time = datetime.now()
-			
-			print("#" * 80)
-			initial_playback_time = cmds.currentTime(q = True)
-			obj.simState = currentState
-			total_count = 1
-			root_count = 1
-			obj.logList = []
-			
-			splitChains_message = 'You need to select the number of objects multiple of {0}. ( {1}, {2}, {3} etc. )'\
-													.format(obj.splitChains_step,
-														obj.splitChains_step*1,
-														obj.splitChains_step*2,
-														obj.splitChains_step*3)
-			
-			def core_func(objName=''):
-				obj.main_start()
-				# Translate block
-				if obj.simState == obj.prefix_base_layer[1]:
-					obj.create_overlappy_layer()
-					obj.replaceSymbols()
-					for i in range(len(obj.list_fixed)):
-						obj.main_set_names(i)
-						obj.main_translate_logic(i)
-						obj.main_last_part(i)
-				
-				# Rotate block
-				elif obj.simState == obj.prefix_base_layer[2]:
-					if (len(obj.list_objects) <= 1):
-						__err = 'Need to select 2 or more objects:\n- ' + objName
-						obj.logList.append(objName)
-						print(obj.myError, __err)
-						if root_count == 1:
-							obj.confirmMessage(__err)
-					else:
-						obj.create_overlappy_layer()
-						obj.replaceSymbols()
-						for i in range(len(obj.list_fixed)-1):
-							obj.main_set_names(i)
-							obj.main_rotate_logic(i)
-							obj.main_last_part(i)
+			def Reset(self, *args):
+				c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
+				c.floatSliderGrp(self.slider, edit = True, value = self.value)
+				self.command()
+			def Scan(self, *args):
+				_firstName = _OVERLAPPY.selected
+				if (_firstName == ""):
+					return
+				_firstName = _OVERLAPPY.ConvertText(_firstName)
+				if (self.addSelectedName):
+					_firstName = self.startName + _firstName
 				else:
-					print(obj.myError, 'simState = 0')
-			
-			
-			if obj.default_mode:
-				obj.selection_set = cmds.ls(sl = True)
-				if len(obj.selection_set) != 0:
-					root_count = 1
-					if obj.simState == obj.prefix_base_layer[1]:
-						total_count = len(cmds.ls(sl = True))
-						obj.run_progressbar(total_count)
-					elif obj.simState == obj.prefix_base_layer[2]:
-						total_count = len(cmds.ls(sl = True)) - 1
-						obj.run_progressbar(total_count - root_count)
-					core_func(str(obj.selection_set[0]))
-					
-				elif len(obj.selection_set) == 0:
-					if obj.simState == obj.prefix_base_layer[1]:
-						__err = 'Need to select 1 or more objects'
-						print(obj.myError, __err)
-						obj.confirmMessage(__err)
-					elif obj.simState == obj.prefix_base_layer[2]:
-						__err = 'Need to select 2 or more objects'
-						print(obj.myError, __err)
-						obj.confirmMessage(__err)
-				
-			elif obj.hierarchy_mode:
-				obj.selection_set = cmds.ls(sl = True)
-				root_list = cmds.ls(sl = True)
-				root_count = len(root_list)
-				cmds.select(root_list, r = True)
-				
-				curCount = ''
-				if root_count != 0:
-					curCount = root_list[0]
-				
-				if obj.SelectTransformHierarchy(curCount, root_count):
-					total_count = len(cmds.ls(sl = True))
-
-					if obj.simState == obj.prefix_base_layer[1]:
-						obj.run_progressbar(total_count)
-						
-					elif obj.simState == obj.prefix_base_layer[2]:
-						obj.run_progressbar(total_count - root_count)
-						
-					for root in range(len(root_list)):
-						cmds.select(root_list[root], r = True)
-						if obj.SelectTransformHierarchy(root_list[root],root_count):
-							core_func(root_list[root])
-			
-			elif obj.splitChains_mode:	
-				if obj.simState == obj.prefix_base_layer[1]:
-					__err = 'Split chains mode works with Rotation baking only'
-					print(obj.myError, __err)
-					obj.confirmMessage(__err)
+					_firstName = self.startName
+				# Get attribute
+				try:
+					# print(firstName + self._attribute)
+					_value = c.getAttr(_firstName + self.attribute)
+					c.floatSliderGrp(self.slider, edit = True, value = _value)
+				except:
+					# print("Can't get value")
+					return
+				# Marker update
+				if (round(_value, 3) != self.value):
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorChanged)
 				else:
-					obj.selection_set = cmds.ls(sl = True)
-					total_count = len(cmds.ls(sl = True))
-					if total_count == 0:
-						__err = 'Nothing selected for Split chains mode'
-						print(obj.myError, __err)
-						obj.confirmMessage(__err)
-					else:
-						if total_count % obj.splitChains_step:
-							__err = splitChains_message
-							print(obj.myError, __err)
-							obj.confirmMessage(__err)
-						else:
-							root_count = total_count / obj.splitChains_step
-							obj.list_split = []
-							step = 0
-							for i in range(root_count):
-								obj.list_split.append(obj.selection_set[step:step
-														+ obj.splitChains_step])
-								step += obj.splitChains_step
-							obj.run_progressbar(total_count - root_count)
-							for i in range(len(obj.list_split)):
-								cmds.select(obj.list_split[i], r = True)
-								core_func()
-			
+					c.button(self._marker, edit = True, backgroundColor = self.markerColorDefault)
+			def GetCached(self, *args):
+				return self.valueCached
+			def SetCached(self, *args):
+				self.valueCached = c.floatSliderGrp(self.slider, query = True, value = True)
+			def ResetCached(self, *args):
+				self.valueCached = 0
+
+		# HEAD MENU
+		c.menuBarLayout()
+		#
+		# c.menu(label = "Settings")
+		# c.menuItem(label = "Save")
+		# c.menuItem(label = "Save as")
+		# c.menuItem(label = "Load")
+		# c.menuItem(divider = True)
+		# c.menuItem(label = "Reset")
+		#
+		c.menu(label = "Scene")
+		c.menuItem(label = "Reload", command = self.SceneReload)
+		c.menuItem(dividerLabel = "Be careful", divider = True)
+		c.menuItem(label = "Quit", command = self.SceneQuit)
+		#
+		c.menu(label = "Script")
+		c.menuItem(label = "Reload", command = self.Restart)
+		c.menuItem(dividerLabel = "Layouts", divider = True)
+		c.menuItem(label = "Collapse all", command = partial(self.LayoutsCollapseLogic, True))
+		c.menuItem(label = "Expand all", command = partial(self.LayoutsCollapseLogic, False))
+		c.menuItem(dividerLabel = "Other", divider = True)
+		c.menuItem(label = "Dev Tools toggle", command = self.LayoutDevToolsToggle, checkBox = False)
+		#
+		c.menu(label = "Help")
+		def LinkPatreon(self): c.showHelp("https://www.patreon.com/geneugene", absolute = True)
+		def LinkGumroad(self): c.showHelp("https://app.gumroad.com/geneugene", absolute = True)
+		def LinkGithub(self): c.showHelp("https://github.com/GenEugene/Overlappy", absolute = True)
+		def LinkYoutube(self): c.showHelp("https://www.youtube.com/channel/UCCIzdVu6RMqUoOmxHoOEPAQ", absolute = True)
+		def LinkReport(self): c.showHelp("https://github.com/GenEugene/Overlappy/discussions/categories/report-a-problem", absolute = True)
+		c.menuItem(label = "About Overlappy") # TODO add window with information
+		c.menuItem(dividerLabel = "Links", divider = True)
+		# c.menuItem(label = "Discord")
+		c.menuItem(label = "Patreon", command = LinkPatreon)
+		c.menuItem(label = "Gumroad", command = LinkGumroad)
+		c.menuItem(label = "GitHub", command = LinkGithub)
+		c.menuItem(label = "YouTube", command = LinkYoutube)
+		c.menuItem(dividerLabel = "Support", divider = True)
+		c.menuItem(label = "Report a Problem...", command = LinkReport)
+		
+		# BUTTONS
+		self.layoutButtons = c.frameLayout(label = "BUTTONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		c.gridLayout(parent = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		c.button(label = "RESET ALL", command = self._ResetAllValues, backgroundColor = OVLP.cYellow)
+		c.button(label = "SELECT", command = self.SelectTransformHierarchy, backgroundColor = OVLP.cLBlue)
+		c.popupMenu()
+		c.menuItem(dividerLabel = "Created objects", divider = True)
+		c.menuItem(label = "Objects", command = self._SelectObjects)
+		c.menuItem(label = "Particle", command = self._SelectParticle)
+		c.menuItem(label = "Nucleus", command = self._SelectNucleus)
+		c.menuItem(label = "Target", command = self._SelectTarget)
+		c.menuItem(label = "Aim", command = self._SelectAim)
+		c.button(label = "LAYERS", command = self._LayerCreateMain, backgroundColor = OVLP.cBlue)
+		c.popupMenu()
+		c.menuItem(dividerLabel = "Move", divider = True)
+		c.menuItem(label = "Move to Safe layer", command = partial(self._LayerMoveToSafeOrBase, True))
+		c.menuItem(label = "Move to Base layer", command = partial(self._LayerMoveToSafeOrBase, False))
+		c.menuItem(dividerLabel = "Delete", divider = True)
+		c.menuItem(label = "Delete '{0}'".format(OVLP.nameLayers[0]), command = partial(self._LayerDelete, OVLP.nameLayers[0]))
+		c.menuItem(label = "Delete '{0}'".format(OVLP.nameLayers[1]), command = partial(self._LayerDelete, OVLP.nameLayers[1]))
+		c.menuItem(divider = True)
+		c.menuItem(label = "Delete 'BaseAnimation'", command = partial(self._LayerDelete, "BaseAnimation"))
+		c.button(label = "SETUP", command = self._SetupInit, backgroundColor = OVLP.cGreen)
+		c.popupMenu()
+		c.menuItem(label = "Scan setup into scene", command = self._SetupScan)
+		c.menuItem(dividerLabel = "Delete", divider = True)
+		c.menuItem(label = "Delete setup", command = self._SetupDelete)
+		
+		# BAKING
+		self.layoutBaking = c.frameLayout(label = "BAKING", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		c.gridLayout(parent = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
+		c.button(label = "TRANSLATION", command = partial(self._BakeVariants, 1), backgroundColor = OVLP.cLOrange)
+		c.popupMenu()
+		c.menuItem(label = "use offset", command = partial(self._BakeVariants, 2))
+		c.button(label = "ROTATION", command = partial(self._BakeVariants, 3), backgroundColor = OVLP.cLOrange)
+		c.button(label = "COMBO", command = partial(self._BakeVariants, 4), backgroundColor = OVLP.cLOrange)
+		c.popupMenu()
+		c.menuItem(label = "translate + rotate", command = self._BakeVariantComboTR)
+		c.menuItem(label = "rotate + translate", command = self._BakeVariantComboRT)
+		c.gridLayout(parent = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
+		c.button(label = "TO WORLD LOCATOR", command = self._BakeWorldLocator, backgroundColor = OVLP.cOrange)
+		c.button(label = "FROM SELECTED TO SELECTED", backgroundColor = OVLP.cOrange, enable = 0)
+
+		# OPTIONS
+		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		_optResetAll = self._ResetOptions
+		self.checkboxChain = classCheckbox(label = "CHAIN", value = OVLP.checkboxesOptions[0], menuReset = True, enabled = True, ccResetAll = _optResetAll)
+		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, enabled = False, ccResetAll = _optResetAll)
+		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, enabled = False, ccResetAll = _optResetAll)
+		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, enabled = True, ccResetAll = _optResetAll)
+		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
+
+		# SIMULATION SETTINGS
+		self.layoutSimulation = c.frameLayout(label = "SIMULATION", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		c.columnLayout(parent = self.layoutSimulation)
+		_simStartName = OVLP.nameParticle
+		_simParent = self.layoutSimulation
+		_simCCDefault = self._ValuesSetSimulation
+		_simCCReset = partial(self._ResetSimulation, True)
+		_simCCGetValues = self._GetSimulation
+		self.sliderPRadius = classSlider(label = "Radius", attribute = "Shape.radius", startName = _simStartName, nameAdd = True, value = OVLP.particleRadius, minMax = OVLP.rangePRadius, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		self.sliderPConserve = classSlider(label = "Conserve", attribute = "Shape.conserve", startName = _simStartName, nameAdd = True, value = OVLP.particleConserve, minMax = OVLP.rangePConserve, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		self.sliderPDrag = classSlider(label = "Drag", attribute = "Shape.drag", startName = _simStartName, nameAdd = True, value = OVLP.particleDrag, minMax = OVLP.rangePDrag, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		self.sliderPDamp = classSlider(label = "Damp", attribute = "Shape.damp", startName = _simStartName, nameAdd = True, value = OVLP.particleDamp, minMax = OVLP.rangePDamp, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		self.sliderGSmooth = classSlider(label = "G.Smooth", attribute = "Shape.goalSmoothness", startName = _simStartName, nameAdd = True, value = OVLP.goalSmooth, minMax = OVLP.rangeGSmooth, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		self.sliderGWeight = classSlider(label = "G.Weight", attribute = "Shape.goalWeight[0]", startName = _simStartName, nameAdd = True, value = OVLP.goalWeight, minMax = OVLP.rangeGWeight, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		self.sliderNTimeScale = classSlider(label = "Time Scale", attribute = ".timeScale", startName = self.nucleus, nameAdd = False, value = OVLP.nucleusTimeScale, minMax = OVLP.rangeNTimeScale, parent = _simParent, command = _simCCDefault, ccResetAll = _simCCReset, ccScanAll = _simCCGetValues)
+		
+		# OFFSET SETTINGS
+		self.layoutOffset = c.frameLayout(label = "OFFSET", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		c.gridLayout(numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		c.separator()
+		self.checkboxMirrorX = classCheckbox(label = "MIRROR X", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
+		self.checkboxMirrorY = classCheckbox(label = "MIRROR Y", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
+		self.checkboxMirrorZ = classCheckbox(label = "MIRROR Z", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
+		c.columnLayout(parent = self.layoutOffset)
+		_offStartName = OVLP.nameLocGoalTarget[0]
+		_offParent = self.layoutOffset
+		_offCCDefault = self._OffsetUpdate
+		_offCCReset = self._ResetOffsets
+		_offCCGetValues = self._GetOffsets
+		self.sliderOffsetX = classSlider(label = "   Local X", attribute = "_parentConstraint1.target[0].targetOffsetTranslateX", startName = _offStartName, minMax = OVLP.rangeOffsetX, parent = _offParent, command = _offCCDefault, ccResetAll = _offCCReset, ccScanAll = _offCCGetValues)
+		self.sliderOffsetY = classSlider(label = "   Local Y", attribute = "_parentConstraint1.target[0].targetOffsetTranslateY", startName = _offStartName, minMax = OVLP.rangeOffsetY, parent = _offParent, command = _offCCDefault, ccResetAll = _offCCReset, ccScanAll = _offCCGetValues)
+		self.sliderOffsetZ = classSlider(label = "   Local Z", attribute = "_parentConstraint1.target[0].targetOffsetTranslateZ", startName = _offStartName, minMax = OVLP.rangeOffsetZ, parent = _offParent, command = _offCCDefault, ccResetAll = _offCCReset, ccScanAll = _offCCGetValues)
+
+		# DEV TOOLS
+		self.layoutDevTools = c.frameLayout(label = "DEV TOOLS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack, visible = False)
+		c.gridLayout(parent = self.layoutDevTools, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
+		c.button(label = "DEV FUNCTION", command = self._DEVFunction, backgroundColor = OVLP.cBlack)
+		c.button(label = "MOTION TRAIL", command = self._MotionTrailCreate, backgroundColor = OVLP.cBlack)
+		c.popupMenu()
+		c.menuItem(label = "Select", command = self._MotionTrailSelect)
+		c.menuItem(divider = True)
+		c.menuItem(label = "Delete", command = self._MotionTrailDelete)
+
+		# RUN WINDOW
+		c.showWindow(self.windowMain)
+		self.Resize_UI()
+	def Resize_UI(self, *args): # TODO get count of visible layouts
+		c.window(self.windowMain, edit = True, height = 152, resizeToFitChildren = True) # OVLP.windowHeight * 6
+	
+	def LayoutsCollapseLogic(self, value, *args): # TODO to external class
+		if (value):
+			if (self.LayoutsCollapseCheck() == value):
+				return
+		else:
+			if (self.LayoutsCollapseCheck() == value):
+				return
+		c.frameLayout(self.layoutButtons, edit = True, collapse = value)
+		c.frameLayout(self.layoutBaking, edit = True, collapse = value)
+		c.frameLayout(self.layoutOptions, edit = True, collapse = value)
+		c.frameLayout(self.layoutSimulation, edit = True, collapse = value)
+		c.frameLayout(self.layoutOffset, edit = True, collapse = value)
+		c.frameLayout(self.layoutDevTools, edit = True, collapse = value)
+		self.Resize_UI()
+	def LayoutsCollapseCheck(self, *args): # needed to fix the window bug
+		check1 = c.frameLayout(self.layoutButtons, query = True, collapse = True)
+		check2 = c.frameLayout(self.layoutBaking, query = True, collapse = True)
+		check3 = c.frameLayout(self.layoutOptions, query = True, collapse = True)
+		check4 = c.frameLayout(self.layoutSimulation, query = True, collapse = True)
+		check5 = c.frameLayout(self.layoutOffset, query = True, collapse = True)
+		check6 = c.frameLayout(self.layoutDevTools, query = True, collapse = True)
+		if (check1 == check2 == check3 == check4 == check5 == check6):
+			return check1
+	def LayoutDevToolsToggle(self, *args):
+		_value = c.frameLayout(self.layoutDevTools, query = True, visible = True)
+		c.frameLayout(self.layoutDevTools, edit = True, visible = not _value)
+		self.Resize_UI()
+	
+	def SceneReload(self, *args): # TODO to external class
+		currentScene = c.file(query = True, sceneName = True)
+		if(currentScene): c.file(currentScene, open = True, force = True)
+		else: c.file(new = True, force = True)
+	def SceneQuit(self, *args): # TODO to external class
+		c.quit(force = True)
+	
+	def ConvertText(self, text, direction=True, *args):
+		if (direction):
+			_text = text.replace("|", OVLP.replaceSymbols[0])
+			_text = _text.replace(":", OVLP.replaceSymbols[1])
+			return _text
+		else:
+			_text = text.replace(OVLP.replaceSymbols[0], "|")
+			_text = _text.replace(OVLP.replaceSymbols[1], ":")
+			return _text
+	
+	def TimeRangeGet(self, *args): # TODO to external class
+		# c.playbackOptions(edit = True, min = self.time[0], max = self.time[1])
+		self.time[0] = c.playbackOptions(query = True, min = True)
+		self.time[1] = c.playbackOptions(query = True, max = True)
+		self.time[2] = c.currentTime(query = True)
+	def TimeRangeMin(self, *args): # TODO to external class
+		c.currentTime(self.time[0])
+	def TimeRangeCached(self, *args): # TODO to external class
+		c.currentTime(self.time[2])
+
+	def SelectTransformHierarchy(self, *args):# TODO from GETools class (need to merge in future)
+		_selected = c.ls(selection = True)
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+		c.select(hierarchy = True)
+		list = c.ls(selection = True, type = "transform", shapes = False)
+		c.select(clear = True)
+		for i in range(len(list)):
+			c.select(list[i], add = True)
+	@staticmethod
+	def BakeSelected(doNotCut=1): # TODO from GETools class (need to merge in future)
+		_startTime = c.playbackOptions(query = True, min = True)
+		_endTime = c.playbackOptions(query = True, max = True)
+		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = doNotCut, simulation = True)
+
+	### LOGIC
+	def _SetupInit(self, *args):
+		self._SetupDelete(False)
+		# Get selected objects
+		self.selected = c.ls(selection = True)
+		if (len(self.selected) == 0):
+			c.warning("You must select at least 1 object")
+			self.selected = ""
+			return
+		self.selected = self.selected[0]
+		# Get min/max anim range time and reset time slider
+		self.TimeRangeGet()
+		self.TimeRangeMin()
+		# Create group
+		c.select(clear = True)
+		if (c.objExists(OVLP.nameGroup)):
+			c.delete(OVLP.nameGroup)
+		c.group(empty = True, name = OVLP.nameGroup)
+		# Run setup logic
+		self._SetupCreate(self.selected)
+		self._OffsetUpdate(cacheReset = True)
+		c.select(self.selected, replace = True)
+	
+	def _SetupCreate(self, objCurrent, *args):
+		# Names
+		_objConverted = self.ConvertText(objCurrent)
+		nameLocGoal = OVLP.nameLocGoalTarget[0] + _objConverted
+		nameLocParticle = OVLP.nameLocGoalTarget[1] + _objConverted
+		nameParticle = OVLP.nameParticle + _objConverted
+		nameLocAimBase = OVLP.nameLocAim[0] + _objConverted
+		nameLocAimHidden = OVLP.nameLocAim[1] + _objConverted
+		nameLocAim = OVLP.nameLocAim[2] + _objConverted
+		nameLoftStart = OVLP.nameLoft[0] + _objConverted
+		nameLoftEnd = OVLP.nameLoft[1] + _objConverted
+		nameLoftShape = OVLP.nameLoft[2] + _objConverted
+
+		# Create locator for goal
+		self.locGoalTarget[0] = c.spaceLocator(name = nameLocGoal)[0]
+		c.parent(self.locGoalTarget[0], OVLP.nameGroup)
+		c.matchTransform(self.locGoalTarget[0], objCurrent, position = True, rotation = True)
+		c.parentConstraint(objCurrent, self.locGoalTarget[0], maintainOffset = True)
+		c.setAttr(self.locGoalTarget[0] + ".visibility", 0)
+		self.startPositionGoalParticle[0] = c.xform(self.locGoalTarget[0], query = True, translation = True)
+
+		# Create particle, goal and get selected object position
+		_position = c.xform(objCurrent, query = True, worldSpace = True, rotatePivot = True)
+		self.particle = c.nParticle(name = nameParticle, position = _position, conserve = 1)[0]
+		c.goal(useTransformAsGoal = True, goal = self.locGoalTarget[0])
+		c.parent(self.particle, OVLP.nameGroup)
+		# self.startPositionGoalParticle[1] = c.xform(self.particle, query = True, translation = True)
+		c.setAttr(self.particle + ".overrideEnabled", 1)
+		c.setAttr(self.particle + ".overrideDisplayType", 2)
+
+		# Set simulation attributes
+		c.setAttr(self.particle + "Shape.radius", self.sliderPRadius.Get())
+		c.setAttr(self.particle + "Shape.solverDisplay", 1)
+		c.setAttr(self.particle + "Shape.conserve", self.sliderPConserve.Get())
+		c.setAttr(self.particle + "Shape.drag", self.sliderPDrag.Get())
+		c.setAttr(self.particle + "Shape.damp", self.sliderPDamp.Get())
+		c.setAttr(self.particle + "Shape.goalSmoothness", self.sliderGSmooth.Get())
+		c.setAttr(self.particle + "Shape.goalWeight[0]", self.sliderGWeight.Get())
+
+		# Nucleus detection
+		self.nucleus = c.ls(type = "nucleus")[0]
+		c.parent(self.nucleus, OVLP.nameGroup)
+		self.sliderNTimeScale.startName = self.nucleus
+		c.setAttr(self.nucleus + ".gravity", 0)
+		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.Get())
+		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO maybe need check start frame in other functions?
+		c.setAttr(self.nucleus + ".visibility", 0)
+
+		# Create and connect locator to particle
+		self.locGoalTarget[1] = c.spaceLocator(name = nameLocParticle)[0]
+		c.parent(self.locGoalTarget[1], OVLP.nameGroup)
+		c.matchTransform(self.locGoalTarget[1], objCurrent, position = True, rotation = True)
+		c.connectAttr(self.particle + ".center", self.locGoalTarget[1] + ".translate", force = True)
+		c.setAttr(self.locGoalTarget[1] + ".visibility", 0)
+
+		# Create base aim locator
+		self.locAim[0] = c.spaceLocator(name = nameLocAimBase)[0]
+		c.parent(self.locAim[0], OVLP.nameGroup)
+		c.matchTransform(self.locAim[0], objCurrent, position = True, rotation = True)
+		c.parentConstraint(objCurrent, self.locAim[0], maintainOffset = True)
+		c.setAttr(self.locAim[0] + ".visibility", 0)
+
+		# Create hidden aim locator
+		self.locAim[1] = c.spaceLocator(name = nameLocAimHidden)[0]
+		c.matchTransform(self.locAim[1], self.locAim[0], position = True, rotation = True)
+		c.parent(self.locAim[1], self.locAim[0])
+		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1))
+		
+		# Create aim locator
+		self.locAim[2] = c.spaceLocator(name = nameLocAim)[0]
+		c.matchTransform(self.locAim[2], self.locAim[0], position = True, rotation = True)
+		c.parent(self.locAim[2], self.locAim[0])
+
+		# Create aim loft
+		self.loft[0] = c.circle(name = nameLoftStart, degree = 1, sections = 4, normal = [0, 1, 0])[0]
+		self.loft[1] = c.duplicate(self.loft[0], name = nameLoftEnd)[0]
+		_scale1 = 0.001
+		_scale2 = self.sliderPRadius.Get() * OVLP.loftFactor
+		c.setAttr(self.loft[0] + ".scaleX", _scale1)
+		c.setAttr(self.loft[0] + ".scaleY", _scale1)
+		c.setAttr(self.loft[0] + ".scaleZ", _scale1)
+		c.setAttr(self.loft[1] + ".scaleX", _scale2)
+		c.setAttr(self.loft[1] + ".scaleY", _scale2)
+		c.setAttr(self.loft[1] + ".scaleZ", _scale2)
+		c.setAttr(self.loft[0] + ".visibility", 0)
+		c.setAttr(self.loft[1] + ".visibility", 0)
+		#
+		c.matchTransform(self.loft[0], self.locAim[2], position = True, rotation = True)
+		c.parent(self.loft[0], self.locAim[2])
+		c.matchTransform(self.loft[1], self.locGoalTarget[1], position = True)
+		c.parent(self.loft[1], self.locGoalTarget[1])
+		c.aimConstraint(self.loft[0], self.loft[1], weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1))
+		#
+		self.loft[2] = c.loft(self.loft[0], self.loft[1], name = nameLoftShape, reverseSurfaceNormals = 0, uniform = 1, polygon = 0)[0]
+		c.parent(self.loft[2], OVLP.nameGroup)
+		c.setAttr(self.loft[2] + ".overrideEnabled", 1)
+		c.setAttr(self.loft[2] + ".overrideDisplayType", 2)
+		c.setAttr(self.loft[2] + ".overrideShading", 0)
+		if (self._LoftGetDistance() < OVLP.loftMinDistance):
+			c.setAttr(self.loft[2] + ".visibility", 0)
+	def _SetupScan(self, *args):
+		# Check overlappy group
+		if (not c.objExists(OVLP.nameGroup)):
+			c.warning("Overlappy object doesn't exists")
+			return
+		# Get children of group
+		_children = c.listRelatives(OVLP.nameGroup)
+		if (len(_children) == 0):
+			c.warning("Overlappy object has no children objects")
+			return
+		# Try to get suffix name
+		_tempList = [OVLP.nameLocGoalTarget[0], OVLP.nameLocGoalTarget[1], OVLP.nameParticle, OVLP.nameLocAim[0], OVLP.nameLoft[2]]
+		_objectName = ""
+		for child in _children:
+			for item in _tempList:
+				_splitNames = child.split(item)
+				if (len(_splitNames) < 2): continue
+				_lastName = _splitNames[-1]
+				if (_objectName == ""):
+					_objectName = _lastName
+				else:
+					if (_objectName == _lastName): continue
+					else: c.warning("Suffix '{0}' don't equals to '{1}'".format(_objectName, _lastName))
+		_converted = self.ConvertText(_objectName, False)
+		if (c.objExists(_converted)):
+			self.selected = _converted
+		
+		def CheckAndSet(name):
+			if (c.objExists(name + _objectName)):
+				return name + _objectName
+			else: return
+		# Objects
+		self.locGoalTarget[0] = CheckAndSet(OVLP.nameLocGoalTarget[0])
+		self.locGoalTarget[1] = CheckAndSet(OVLP.nameLocGoalTarget[1])
+		self.locAim[0] = CheckAndSet(OVLP.nameLocAim[0])
+		self.locAim[1] = CheckAndSet(OVLP.nameLocAim[1])
+		self.locAim[2] = CheckAndSet(OVLP.nameLocAim[2])
+		self.particle = CheckAndSet(OVLP.nameParticle)
+		self.loft[0] = CheckAndSet(OVLP.nameLoft[0])
+		self.loft[1] = CheckAndSet(OVLP.nameLoft[1])
+		self.loft[2] = CheckAndSet(OVLP.nameLoft[2])
+		# Time and offset
+		self.TimeRangeGet()
+		self.TimeRangeMin()
+		self.startPositionGoalParticle[0] = c.xform(self.locAim[0], query = True, translation = True)
+		self.TimeRangeCached()
+		# Nucleus
+		_nucleus = c.ls(type = "nucleus")
+		if (len(_nucleus) > 0):
+			self.nucleus = _nucleus[0]
+			self.sliderNTimeScale.startName = self.nucleus
+		# Get sliders
+		self.sliderPRadius.Scan()
+		self._GetSimulation()
+		self._GetOffsets()
+	def _SetupDelete(self, deselect=True, *args):
+		self.selected = ""
+		self.locGoalTarget = ["", ""]
+		self.locAim = ["", "", ""]
+		self.particle = ""
+		self.nucleus = ""
+		self.loft = ["", "", ""]
+		# Delete group
+		if (c.objExists(OVLP.nameGroup)):
+			c.delete(OVLP.nameGroup)
+		# Delete nucleus node
+		_nucleus = c.ls(type = "nucleus")
+		if (len(_nucleus) > 0):
+			c.delete(_nucleus)
+		if (deselect):
+			c.select(clear = True)
+
+	def _OffsetUpdate(self, cacheReset=False, *args):
+		if (type(cacheReset) is float): cacheReset = False
+		if (cacheReset):
+			self.sliderOffsetX.ResetCached()
+			self.sliderOffsetY.ResetCached()
+			self.sliderOffsetZ.ResetCached()
+		# Check and set cached value
+		_checkX = self.sliderOffsetX.GetCached() != self.sliderOffsetX.Get()
+		_checkY = self.sliderOffsetY.GetCached() != self.sliderOffsetY.Get()
+		_checkZ = self.sliderOffsetZ.GetCached() != self.sliderOffsetZ.Get()
+		if (_checkX or _checkY or _checkZ):
+			self.sliderOffsetX.SetCached()
+			self.sliderOffsetY.SetCached()
+			self.sliderOffsetZ.SetCached()
+		else: return
+
+		self._ValuesSetOffset()
+
+		_checkSelected = self.selected == "" or not c.objExists(self.selected)
+		_checkGoal = not c.objExists(self.locGoalTarget[0])
+		_checkAim = not c.objExists(self.locAim[2])
+		_checkStartPos = self.startPositionGoalParticle[0] == None
+		if (_checkSelected or _checkGoal or _checkAim or _checkStartPos): return
+
+		c.currentTime(self.time[0])
+		# Mirrors
+		_mirror = [1, 1, 1]
+		if (self.checkboxMirrorX.Get()): _mirror[0] = -1
+		if (self.checkboxMirrorY.Get()): _mirror[1] = -1
+		if (self.checkboxMirrorZ.Get()): _mirror[2] = -1
+		# Get values from sliders
+		_values = [0, 0, 0]
+		_values[0] = self.sliderOffsetX.Get() * _mirror[0]
+		_values[1] = self.sliderOffsetY.Get() * _mirror[1]
+		_values[2] = self.sliderOffsetZ.Get() * _mirror[2]
+		# Set locGoal constraint offset
+		_goalAttributes = [0, 0, 0]
+		_goalAttributes[0] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateX"
+		_goalAttributes[1] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateY"
+		_goalAttributes[2] = self.locGoalTarget[0] + "_parentConstraint1.target[0].targetOffsetTranslateZ"
+		c.setAttr(_goalAttributes[0], _values[0])
+		c.setAttr(_goalAttributes[1], _values[1])
+		c.setAttr(_goalAttributes[2], _values[2])
+		# Get offset
+		_goalPosition = c.xform(self.locGoalTarget[0], query = True, translation = True)
+		_goalOffset = [0, 0, 0]
+		_goalOffset[0] = self.startPositionGoalParticle[0][0] - _goalPosition[0]
+		_goalOffset[1] = self.startPositionGoalParticle[0][1] - _goalPosition[1]
+		_goalOffset[2] = self.startPositionGoalParticle[0][2] - _goalPosition[2]
+		# Set particle attributes
+		_particleAttributes = [0, 0, 0]
+		_particleAttributes[0] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateX"
+		_particleAttributes[1] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateY"
+		_particleAttributes[2] = OVLP.nameParticle + self.ConvertText(self.selected) + ".translateZ"
+		c.setAttr(_particleAttributes[0], self.startPositionGoalParticle[1][0] - _goalOffset[0])
+		c.setAttr(_particleAttributes[1], self.startPositionGoalParticle[1][1] - _goalOffset[1])
+		c.setAttr(_particleAttributes[2], self.startPositionGoalParticle[1][2] - _goalOffset[2])
+		# Reconstrain aim locator to hidden aim
+		c.setAttr(self.locAim[2] + ".rotateX", 0)
+		c.setAttr(self.locAim[2] + ".rotateY", 0)
+		c.setAttr(self.locAim[2] + ".rotateZ", 0)
+		c.orientConstraint(self.locAim[1], self.locAim[2], maintainOffset = True)
+
+	### SELECT
+	def _Select(self, name="", *args):
+		if (name != ""):
+			if (c.objExists(name)):
+				c.select(name, replace = True)
+			else: c.warning("'{0}' object doesn't exists".format(name))
+		else: c.warning("Can't select 'None'")
+	def _SelectObjects(self, *args):
+		if (self.selected == ""):
+			self._Select()
+		else:
+			self._Select(self.selected)
+	def _SelectParticle(self, *args):
+		self._Select(self.particle)
+	def _SelectNucleus(self, *args):
+		self._Select(self.nucleus)
+	def _SelectTarget(self, *args):
+		self._Select(self.locGoalTarget[1])
+	def _SelectAim(self, *args):
+		self._Select(self.locAim[2])
+
+	### VALUES
+	def _ValuesSetSimulation(self, *args):
+		self.sliderPRadius.Set()
+		self.sliderPConserve.Set()
+		self.sliderPDrag.Set()
+		self.sliderPDamp.Set()
+		self.sliderGSmooth.Set()
+		self.sliderGWeight.Set()
+		self.sliderNTimeScale.Set()
+		self._LoftUpdate()
+	def _ValuesSetOffset(self, *args):
+		self.sliderOffsetX.Set()
+		self.sliderOffsetY.Set()
+		self.sliderOffsetZ.Set()
+		self._LoftUpdate()
+	def _LoftUpdate(self, *args):
+		if (self.loft[1] == ""): return
+		if (not c.objExists(self.loft[1])): return
+		_scale = self.sliderPRadius.Get() * OVLP.loftFactor
+		c.setAttr(self.loft[1] + ".scaleX", _scale)
+		c.setAttr(self.loft[1] + ".scaleY", _scale)
+		c.setAttr(self.loft[1] + ".scaleZ", _scale)
+		if (self._LoftGetDistance() < OVLP.loftMinDistance): c.setAttr(self.loft[2] + ".visibility", 0)
+		else: c.setAttr(self.loft[2] + ".visibility", 1)
+	def _LoftGetDistance(self, *args):
+		_vector = [0, 0, 0]
+		_vector[0] = self.sliderOffsetX.Get()
+		_vector[1] = self.sliderOffsetY.Get()
+		_vector[2] = self.sliderOffsetZ.Get()
+		return sqrt(pow(_vector[0], 2) + pow(_vector[1], 2) + pow(_vector[2], 2)) # Distance formula : √((x2 - x1)2 + (y2 - y1)2 + (z2 - z1)2)
+
+	def _GetSimulation(self, *args):
+		self.sliderPConserve.Scan()
+		self.sliderPDrag.Scan()
+		self.sliderPDamp.Scan()
+		self.sliderGSmooth.Scan()
+		self.sliderGWeight.Scan()
+		self.sliderNTimeScale.Scan()
+	def _GetOffsets(self, *args):
+		self.sliderOffsetX.Scan()
+		self.sliderOffsetY.Scan()
+		self.sliderOffsetZ.Scan()
+	def _ResetAllValues(self, *args):
+		self.checkboxChain.Reset()
+		self.checkboxLayer.Reset()
+		self.checkboxLoop.Reset()
+		self.checkboxClean.Reset()
+		self._ResetOptions()
+		self._ResetSimulation(True)
+		self._ResetOffsets()
+	def _ResetOptions(self, *args):
+		self.checkboxChain.Reset()
+		self.checkboxLayer.Reset()
+		self.checkboxLoop.Reset()
+		self.checkboxClean.Reset()
+	def _ResetSimulation(self, full=False, *args):
+		if (full):
+			self.sliderPRadius.Reset()
+		self.sliderPConserve.Reset()
+		self.sliderPDrag.Reset()
+		self.sliderPDamp.Reset()
+		self.sliderGSmooth.Reset()
+		self.sliderGWeight.Reset()
+		self.sliderNTimeScale.Reset()
+		self._ValuesSetSimulation()
+	def _ResetOffsets(self, *args):
+		self.checkboxMirrorX.Reset()
+		self.checkboxMirrorY.Reset()
+		self.checkboxMirrorZ.Reset()
+		self.sliderOffsetX.Reset()
+		self.sliderOffsetY.Reset()
+		self.sliderOffsetZ.Reset()
+		self._ValuesSetOffset()
+	
+	### BAKE
+	def _BakeLogic(self, parent, zeroOffsets=False, translation=True, deleteSetupLock=False, *args):
+		if (zeroOffsets):
+			_value1 = self.sliderOffsetX.Get()
+			_value2 = self.sliderOffsetY.Get()
+			_value3 = self.sliderOffsetZ.Get()
+			self.sliderOffsetX.Reset()
+			self.sliderOffsetY.Reset()
+			self.sliderOffsetZ.Reset()
+		# Start logic
+		if (translation): _attributes = OVLP.attrT
+		else: _attributes = OVLP.attrR
+		c.currentTime(self.time[0])
+		_item = self.selected
+		_name = "_rebake_" + self.ConvertText(_item)
+		_clone = c.duplicate(_item, name = _name, parentOnly = True, transformsOnly = True, smartTransform = True, returnRootsOnly = True)
+		c.parentConstraint(parent, _clone, maintainOffset = True)
+		c.select(_clone, replace = True)
+		# Bake
+		OVLP.BakeSelected()
+		_children = c.listRelatives(_clone, type = "constraint")
+		for child in _children: c.delete(child)
+		# Copy/Paste keys
+		c.copyKey(_clone, attribute = _attributes) # TODO filtered attributes
+		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
+		c.delete(_clone)
+		if (self.checkboxClean.Get()):
+			if (not deleteSetupLock):
+				self._SetupDelete()
+		# Restore offsets
+		if (zeroOffsets):
+			self.sliderOffsetX.Set(_value1)
+			self.sliderOffsetY.Set(_value2)
+			self.sliderOffsetZ.Set(_value3)
+	def _BakeCheck(self, *args):
+		_selected = c.ls(selection = True)
+		if (len(_selected) == 0):
+			if (self.selected == ""): return None
+			return 0, None
+		else:
+			if (self.checkboxChain.Get()):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(selection = True)
+			return len(_selected), _selected
+	def _BakeVariants(self, variant, *args):
+		_selected = self._BakeCheck()
+		if (_selected == None): return
+
+		if (_selected[0] == 0):
+			if (variant == 1):
+				self._BakeLogic(self.locGoalTarget[1], True, True, False)
+			elif (variant == 2):
+				self._BakeLogic(self.locGoalTarget[1], False, True, False)
+			elif (variant == 3):
+				self._BakeLogic(self.locAim[2], False, False, False)
+			elif (variant == 4):
+				self._BakeLogic(self.locGoalTarget[1], True, True, True)
+				self._BakeLogic(self.locAim[2], False, False, False)
+		else:
+			for ii in range(_selected[0]):
+				c.select(_selected[1][ii], replace = True)
+				self._SetupInit()
+				if (variant == 1):
+					self._BakeLogic(self.locGoalTarget[1], True, True, False)
+				elif (variant == 2):
+					self._BakeLogic(self.locGoalTarget[1], False, True, False)
+				elif (variant == 3):
+					self._BakeLogic(self.locAim[2], False, False, False)
+				elif (variant == 4):
+					self._BakeLogic(self.locGoalTarget[1], True, True, True)
+					self._BakeLogic(self.locAim[2], False, False, False)
+			c.select(_selected[1], replace = True)
+	def _BakeVariantComboTR(self, *args):
+		self._BakeVariants(1)
+		self._BakeVariants(3)
+	def _BakeVariantComboRT(self, *args):
+		self._BakeVariants(3)
+		self._BakeVariants(1)
+	def _BakeWorldLocator(self, *args):
+		_selected = c.ls(selection = True) # Get selected objects
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+		else:
+			if (self.checkboxChain.Get()):
+				self.SelectTransformHierarchy()
+				_selected = c.ls(selection = True)
+		_locators = []
+		for item in _selected: # Create locator
+			_name = OVLP.nameBakedWorldLocator + "1"
+			_locator = c.spaceLocator(name = _name)[0]
+			c.matchTransform(_locator, item, position = True, rotation = True)
+			c.parentConstraint(item, _locator, maintainOffset = True)
+			c.scaleConstraint(item, _locator, maintainOffset = True)
+			_scale = 50
+			c.setAttr(_locator + "Shape.localScaleX", _scale)
+			c.setAttr(_locator + "Shape.localScaleY", _scale)
+			c.setAttr(_locator + "Shape.localScaleZ", _scale)
+			_locators.append(_locator)
+		c.select(_locators, replace = True) # Bake and cleanup
+		OVLP.BakeSelected()
+		for loc in _locators:
+			_children = c.listRelatives(loc, type = "constraint")
+			for child in _children:
+				c.delete(child)
+
+	### LAYERS
+	def _LayerCreateMain(self, *args):
+		# Check selected
+		_selected = c.ls(selection = True)
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+		# Create main layer
+		if(not c.objExists(OVLP.nameLayers[0])):
+			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = True)
+		# Create layers on selected
+		for item in _selected:
+			_name = OVLP.nameLayers[2] + self.ConvertText(item) + "_1"
+			c.animLayer(_name, override = True, parent = self.layers[0])
+	def _LayerMoveToSafeOrBase(self, safeLayer=True, *args):
+		_id = [0, 1]
+		if (not safeLayer): _id = [1, 0]
+		_layer1 = OVLP.nameLayers[_id[0]]
+		_layer2 = OVLP.nameLayers[_id[1]]
+
+		# Check source layer
+		if(not c.objExists(_layer1)):
+			c.warning("Layer '{0}' doesn't exist".format(_layer1))
+			return
+		# Get selected layers
+		_selectedLayers = []
+		for animLayer in c.ls(type = "animLayer"):
+			if c.animLayer(animLayer, query = True, selected = True):
+				_selectedLayers.append(animLayer)
+		# Check selected count
+		_children = c.animLayer(self.layers[_id[0]], query = True, children = True)
+		_filteredLayers = []
+		if (len(_selectedLayers) == 0):
+			if (_children == None):
+				c.warning("Layer '{0}' is empty".format(_layer1))
+				return
 			else:
-				frameinfo = getframeinfo(currentframe())
-				ln = '\n' + obj.text_report + ' Line {0}'.format(frameinfo.lineno - 2)
-				
-				__err = 'Cant find mode.' + ln
-				print(obj.myError, __err)
-				obj.confirmMessage(__err)
+				for layer in _children:
+					_filteredLayers.append(layer)
+		else:
+			if (_children == None):
+				c.warning("Layer '{0}' is empty".format(_layer1))
+				return
+			else:
+				for layer1 in _children:
+					for layer2 in _selectedLayers:
+						if (layer1 == layer2):
+							_filteredLayers.append(layer1)
+			if (len(_filteredLayers) == 0):
+				c.warning("Nothing to move")
+				return
+		# Create safe layer
+		if(not c.objExists(_layer2)):
+			self.layers[_id[1]] = c.animLayer(_layer2, override = True)
+		# Move children or selected layers
+		for layer in _filteredLayers:
+			c.animLayer(layer, edit = True, parent = self.layers[_id[1]])
+		# Delete base layer if no children
+		if (len(_filteredLayers) == len(_children)):
+			self._LayerDelete(_layer1)
+	
+	def _LayerDelete(self, name, *args):
+		if(c.objExists(name)):
+			c.delete(name)
+			print("Layer '{0}' deleted".format(name))
+		else:
+			c.warning("Layer '{0}' doesn't exist".format(name))
+	
+	### DEV TOOLS
+	def _DEVFunction(self, *args):
+		print("DEV Function")
+	
+	def _MotionTrailCreate(self, *args):
+		_selected = c.ls(selection = True) # Get selected objects
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+		_name = "MotionTrail_1"
+		_step = 1
+		_start = c.playbackOptions(query = True, minTime = True)
+		_end = c.playbackOptions(query = True, maxTime = True)
+		c.snapshot(name = _name, motionTrail = True, increment = _step, startTime = _start, endTime = _end)
+		_trails = c.ls(type = "motionTrail")
+		for item in _trails:
+			c.setAttr(item + "Handle" + "Shape.trailDrawMode", 1)
+			c.setAttr(item + "Handle" + "Shape.template", 1)
+	def _MotionTrailSelect(self, *args):
+		_trails = c.ls(type = "motionTrail")
+		if (len(_trails) == 0): return
+		c.select(clear = True)
+		for item in _trails:
+			c.select(item + "Handle", add = True)
+	def _MotionTrailDelete(self, *args):
+		_trails = c.ls(type = "motionTrail")
+		if (len(_trails) == 0): return
+		for item in _trails:
+			c.delete(item + "Handle")
 
-			
-			print(obj.myMessage, 'total_count', total_count)
-			print(obj.myMessage, 'root_count', root_count)
-			obj.main_end()
-			obj.simState = obj.prefix_base_layer[0]
-			cmds.currentTime(initial_playback_time)
-			end_time = datetime.now()
-			print(obj.myMessage, "Simulation time: {}".format(end_time - start_time))
-			print("#" * 80)
-			
-			if obj.hierarchy_mode and len(obj.logList) != 0 and obj.dontShow_hier == 1:
-				showLogList = ''
-				for item in range(len(obj.logList)):
-					showLogList += '\n- ' + ''.join(obj.logList[item])
-				
-				__err = obj.dontShow_hier_text + showLogList
-				print(obj.myWarning, __err)
-				obj.confirmMessage(__err, obj.dontShow_hier, 2, 'printHier')
-		
-		
-		
-		### Run code ###
-		@staticmethod
-		def RunOverlappy():
-			obj.create_ui()
-			obj.reset_all(False)
-		
-		
-### Create instance ###
-obj = TheOverlappy.OverlappyObject()
-obj.RunOverlappy()
+	### EXECUTION
+	def Start(self, *args):
+		_OVERLAPPY.CreateUI()
+	def Restart(self, *args):
+		c.evalDeferred("_OVERLAPPY.Start()")
+	def Cleanup(self, *args): # TODO something wrong
+		# c.evalDeferred("_OVERLAPPY = None")
+		# c.evalDeferred("OVLP = None")
+		pass
 
-################################################################################
-###### End code ######
+_OVERLAPPY = OVLP()
+_OVERLAPPY.Start()
