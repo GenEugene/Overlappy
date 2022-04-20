@@ -21,7 +21,7 @@ https://www.artstation.com/geneugene
 
 ---
 # Version history
-# v0.2.0 - in progress...
+# v2.0.0 - in progress...
     - [GENERAL] full code reconstruction
 	- [NEW] main setup logic
 	- [NEW] simulation sliders (particle, nucleus)

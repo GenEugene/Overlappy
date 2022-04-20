@@ -1,4 +1,4 @@
-# Overlappy v0.2.0 for Maya 2022
+# Overlappy v2.0.0 for Maya 2022
 # Author Eugene Gataulin (GenEugene) tek94@mail.ru tek942@gmail.com
 # https://github.com/GenEugene/Overlappy
 
@@ -10,7 +10,7 @@ from functools import partial
 
 class OVLP:
 	# NAMING
-	textTitle = "OVERLAPPY v0.2.0"
+	textTitle = "OVERLAPPY v2.0.0"
 	nameWindowMain = "__OverlappyWindow__"
 	nameGroup = "_OverlappyGroup_"
 	#
