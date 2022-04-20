@@ -451,7 +451,6 @@ class OVLP:
 		self._SetupCreate(self.selected)
 		self._OffsetUpdate(cacheReset = True)
 		c.select(self.selected, replace = True)
-	
 	def _SetupCreate(self, objCurrent, *args):
 		# Names
 		_objConverted = self.ConvertText(objCurrent)
@@ -623,7 +622,6 @@ class OVLP:
 			c.delete(_nucleus)
 		if (deselect):
 			c.select(clear = True)
-
 	def _OffsetUpdate(self, cacheReset=False, *args):
 		if (type(cacheReset) is float): cacheReset = False
 		if (cacheReset):
@@ -948,7 +946,6 @@ class OVLP:
 		# Delete base layer if no children
 		if (len(_filteredLayers) == len(_children)):
 			self._LayerDelete(_layer1)
-	
 	def _LayerDelete(self, name, *args):
 		if(c.objExists(name)):
 			c.delete(name)
@@ -959,7 +956,6 @@ class OVLP:
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
 		print("DEV Function")
-	
 	def _MotionTrailCreate(self, *args):
 		_selected = c.ls(selection = True) # Get selected objects
 		if (len(_selected) == 0):
