@@ -13,16 +13,12 @@ class OVLP:
 	textTitle = "OVERLAPPY v2.0.0"
 	nameWindowMain = "__OverlappyWindow__"
 	nameGroup = "_OverlappyGroup_"
-	#
 	nameLocGoalTarget = ("_locGoal_", "_locTarget_")
 	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_")
 	nameParticle = "_particle_"
 	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
-	#
 	nameLayers = ("_OVLP_BASE_", "_OVLP_SAFE_", "OVLP_", "OVLPpos_", "OVLProt_")
-	#
 	nameBakedWorldLocator = "BakedWorldLocator_"
-	#
 	replaceSymbols = ("_R1S_", "_R2S_") # for "|" and ":"
 	# WINDOW
 	windowWidth = 330
@@ -33,7 +29,6 @@ class OVLP:
 	# LOFT
 	loftFactor = 0.9
 	loftMinDistance = 5
-	
 	# SIMULATION SETTINGS # TODO: move to preset
 	checkboxesOptions = [False, True, False, True]
 	particleRadius = 20
@@ -43,7 +38,6 @@ class OVLP:
 	goalSmooth = 3
 	goalWeight = 0.5
 	nucleusTimeScale = 1
-	
 	# SLIDERS (field min/max, slider min/max)
 	rangePRadius = (0, float("inf"), 0, 50)
 	rangePConserve = (0, 1, 0, 1)
@@ -97,7 +91,7 @@ class OVLP:
 		self.layoutOffset = None
 		self.layoutDevTools = None
 		# CHECKBOXES
-		self.checkboxChain = None
+		self.checkboxHierarchy = None
 		self.checkboxLayer = None
 		self.checkboxLoop = None
 		self.checkboxClean = None
@@ -119,7 +113,7 @@ class OVLP:
 		# WINDOW
 		if c.window(OVLP.nameWindowMain, exists = True):
 			c.deleteUI(OVLP.nameWindowMain)
-		self.windowMain = c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = True, widthHeight = (OVLP.windowWidth, OVLP.windowHeight * 6), closeCommand = self.Cleanup)
+		self.windowMain = c.window(OVLP.nameWindowMain, title = OVLP.textTitle, maximizeButton = 0, sizeable = 0, resizeToFitChildren = True, widthHeight = (OVLP.windowWidth, OVLP.windowHeight * 6))
 		self.layoutMain = c.columnLayout(adjustableColumn = True, height = OVLP.windowHeight)
 
 		# CLASSES
@@ -308,11 +302,11 @@ class OVLP:
 		# OPTIONS
 		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
 		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
-		_optResetAll = self._ResetOptions
-		self.checkboxChain = classCheckbox(label = "CHAIN", value = OVLP.checkboxesOptions[0], menuReset = True, enabled = True, ccResetAll = _optResetAll)
-		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, enabled = False, ccResetAll = _optResetAll)
-		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, enabled = False, ccResetAll = _optResetAll)
-		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, enabled = True, ccResetAll = _optResetAll)
+		_optionsResetAll = self._ResetOptions
+		self.checkboxHierarchy = classCheckbox(label = "HIERARCHY", value = OVLP.checkboxesOptions[0], menuReset = True, enabled = True, ccResetAll = _optionsResetAll)
+		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, enabled = False, ccResetAll = _optionsResetAll)
+		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, enabled = False, ccResetAll = _optionsResetAll)
+		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, enabled = True, ccResetAll = _optionsResetAll)
 		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SIMULATION SETTINGS
@@ -757,7 +751,7 @@ class OVLP:
 		self.sliderOffsetY.Scan()
 		self.sliderOffsetZ.Scan()
 	def _ResetAllValues(self, *args):
-		self.checkboxChain.Reset()
+		self.checkboxHierarchy.Reset()
 		self.checkboxLayer.Reset()
 		self.checkboxLoop.Reset()
 		self.checkboxClean.Reset()
@@ -765,7 +759,7 @@ class OVLP:
 		self._ResetSimulation(True)
 		self._ResetOffsets()
 	def _ResetOptions(self, *args):
-		self.checkboxChain.Reset()
+		self.checkboxHierarchy.Reset()
 		self.checkboxLayer.Reset()
 		self.checkboxLoop.Reset()
 		self.checkboxClean.Reset()
@@ -828,7 +822,7 @@ class OVLP:
 			if (self.selected == ""): return None
 			return 0, None
 		else:
-			if (self.checkboxChain.Get()):
+			if (self.checkboxHierarchy.Get()):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 			return len(_selected), _selected
@@ -872,7 +866,7 @@ class OVLP:
 			c.warning("You must select at least 1 object")
 			return
 		else:
-			if (self.checkboxChain.Get()):
+			if (self.checkboxHierarchy.Get()):
 				self.SelectTransformHierarchy()
 				_selected = c.ls(selection = True)
 		_locators = []
@@ -997,10 +991,6 @@ class OVLP:
 		_OVERLAPPY.CreateUI()
 	def Restart(self, *args):
 		c.evalDeferred("_OVERLAPPY.Start()")
-	def Cleanup(self, *args): # TODO something wrong
-		# c.evalDeferred("_OVERLAPPY = None")
-		# c.evalDeferred("OVLP = None")
-		pass
 
 _OVERLAPPY = OVLP()
 _OVERLAPPY.Start()

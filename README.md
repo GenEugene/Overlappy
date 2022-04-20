@@ -2,60 +2,61 @@
 Animation script for maya 2017/2022
 
 ---
-## LINKS
-https://gumroad.com/l/iCNa
-https://www.highend3d.com/maya/script/overlappy-for-maya-105076
-https://vk.com/geneugene3d
-https://www.artstation.com/geneugene
+# `LINKS`
+- https://gumroad.com/l/iCNa
+- https://www.highend3d.com/maya/script/overlappy-for-maya-105076
+- https://vk.com/geneugene3d
+- https://www.artstation.com/geneugene
 
 ---
-## TASK list OLD
-- gravity options
-- aim position offset
-- deselect shapes from list
-- twist mode
-- loop mode upgrade
-- installation
-- stop "ESC"
-- save prefs to file
+# `Version history`
 
----
-# Version history
 # v2.0.0 - in progress...
-    - [GENERAL] full code reconstruction
-	- [NEW] main setup logic
+	- [GENERAL] full code reconstruction
+	- [NEW] setup logic
+	- [NEW] symbols converter and name detection
 	- [NEW] simulation sliders (particle, nucleus)
-	- [NEW] offset goal
-	- [NEW] scan overlappy objects in current scene
+	- [NEW] offset goal logic + aim shape
+	- [NEW] scan objects in current scene
 	- [NEW] bake selected objects to world locators
-	- [DEV] motion trail
+	- [NEW] bake to translations
+	- [NEW] bake to rotations
+	- [NEW] bake combined (translate + rotate per object)
+	- [NEW] hierarchy mode
+	- [NEW] loop mode IN PROGRESS...
+	- [NEW] layers logic IN PROGRESS...
+	- [NEW] attributes filter IN PROGRESS...
+	- [NEW] progress bar IN PROGRESS...
+	- [NEW] notifications IN PROGRESS...
+	- [NEW] annotations IN PROGRESS...
+	- [DEV] motion trail on selected (create, select, delete)
 
 # v0.1.1
-    - [FIX] updated for Maya 2020-2022
+	- [FIX] updated for Maya 2020-2022
 
 # v0.1.0
-    - [NEW] full refactoring, class inheritance
-    - [NEW] collapsed main logic into one block
-    - [NEW] execution time log
-    - [NEW] SELECT hierarchy button
-    - [NEW] hierarchy mode
-    - [NEW] splitChains mode
-    - [NEW] min loop factor controller
-    - [NEW] confirm message dialogs system
-    - [FIX] joint chain rotation issue
-    - [FIX] progress bar close with script window
-    - [FIX] timeline returns to frame before simulation
-    - [OTHER] more comfortable default values and sliders limits
-    - [OTHER] more informative logs (counts, time, etc.)
-    - [OTHER] rename some buttons and color changes
+	- [NEW] full refactoring, class inheritance
+	- [NEW] collapsed main logic into one block
+	- [NEW] execution time log
+	- [NEW] SELECT hierarchy button
+	- [NEW] hierarchy mode
+	- [NEW] splitChains mode
+	- [NEW] min loop factor controller
+	- [NEW] confirm message dialogs system
+	- [FIX] joint chain rotation issue
+	- [FIX] progress bar close with script window
+	- [FIX] timeline returns to frame before simulation
+	- [OTHER] more comfortable default values and sliders limits
+	- [OTHER] more informative logs (counts, time, etc.)
+	- [OTHER] rename some buttons and color changes
 
 # v0.0.9
-    - [NEW] created simulation states (for translate/rotate/other separation)
-    - [FIX] "blendParent1" issue
-    - [FIX] optimized speed, reduced simulation passes (from 2-3 to 1)
-    - [FIX] progressbar events
-    - [FIX] MOVE button exceptions
-    - [OTHER] rewrited layer logic, safe move and much other logic
+	- [NEW] created simulation states (for translate/rotate/other separation)
+	- [FIX] "blendParent1" issue
+	- [FIX] optimized speed, reduced simulation passes (from 2-3 to 1)
+	- [FIX] progressbar events
+	- [FIX] MOVE button exceptions
+	- [OTHER] rewrited layer logic, safe move and much other logic
 
 # v0.0.8
 	- [NEW] compatibility with Maya 2017
