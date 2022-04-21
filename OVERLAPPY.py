@@ -246,7 +246,7 @@ class OVLP:
 		def LinkGithub(self): c.showHelp("https://github.com/GenEugene/Overlappy", absolute = True)
 		def LinkYoutube(self): c.showHelp("https://www.youtube.com/channel/UCCIzdVu6RMqUoOmxHoOEPAQ", absolute = True)
 		def LinkReport(self): c.showHelp("https://github.com/GenEugene/Overlappy/discussions/categories/report-a-problem", absolute = True)
-		c.menuItem(label = "About Overlappy") # TODO add window with information
+		c.menuItem(label = "About Overlappy", enable = False) # TODO add window with information
 		c.menuItem(dividerLabel = "Links", divider = True)
 		# c.menuItem(label = "Discord")
 		c.menuItem(label = "Patreon", command = LinkPatreon)
