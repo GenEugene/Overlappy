@@ -799,7 +799,7 @@ class OVLP:
 		self.TimeRangeScan()
 		_startTime = self.time[2]
 		if (self.checkboxLoop.Get()):
-			_startTime = self.time[2] - self.time[3] # TODO set count of pre cycles
+			_startTime = self.time[2] - self.time[3] * 2 # TODO set count of pre cycles
 			self.TimeRangeSetMin(_startTime)
 			self.TimeRangeSetCurrent(_startTime)
 		c.setAttr(self.nucleus + ".startFrame", _startTime)
