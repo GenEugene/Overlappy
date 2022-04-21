@@ -71,7 +71,7 @@ class OVLP:
 	### MAIN
 	def __init__(self):
 		# VALUES
-		self.time = [0, 0, 0] # min, max, current
+		self.time = [0, 0, 0, 0, 0] # current, minS, min, max, maxE
 		self.startPositionGoalParticle = [None, (0, 0, 0)]
 		# OBJECTS
 		self.selected = ""
@@ -131,7 +131,6 @@ class OVLP:
 				c.checkBox(self.checkbox, edit = True, value = value)
 			def Reset(self, *args):
 				c.checkBox(self.checkbox, edit = True, value = self.value)
-
 		class classSlider:
 			def __init__(self, label="label", attribute="", startName="", nameAdd=True, value=0, minMax=[0, 1, 0, 1], parent=self.layoutMain, command="pass", precision=3, menuReset=True, menuScan=True, ccResetAll="pass", ccScanAll="pass"):
 				self.attribute = attribute
@@ -303,10 +302,10 @@ class OVLP:
 		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
 		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		_optionsResetAll = self._ResetOptions
-		self.checkboxHierarchy = classCheckbox(label = "HIERARCHY", value = OVLP.checkboxesOptions[0], menuReset = True, enabled = True, ccResetAll = _optionsResetAll)
-		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, enabled = False, ccResetAll = _optionsResetAll)
-		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, enabled = False, ccResetAll = _optionsResetAll)
-		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, enabled = True, ccResetAll = _optionsResetAll)
+		self.checkboxHierarchy = classCheckbox(label = "HIERARCHY", value = OVLP.checkboxesOptions[0], menuReset = True, ccResetAll = _optionsResetAll)
+		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, ccResetAll = _optionsResetAll, enabled = False)
+		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, ccResetAll = _optionsResetAll)
+		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, ccResetAll = _optionsResetAll)
 		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SIMULATION SETTINGS
@@ -403,14 +402,20 @@ class OVLP:
 			_text = _text.replace(OVLP.replaceSymbols[1], ":")
 			return _text
 	
-	def TimeRangeGet(self, *args): # TODO to external class
-		# c.playbackOptions(edit = True, min = self.time[0], max = self.time[1])
-		self.time[0] = c.playbackOptions(query = True, min = True)
-		self.time[1] = c.playbackOptions(query = True, max = True)
-		self.time[2] = c.currentTime(query = True)
-	def TimeRangeMin(self, *args): # TODO to external class
+	def TimeRangeScan(self, *args): # TODO to external class
+		self.time[0] = c.currentTime(query = True)
+		self.time[1] = c.playbackOptions(query = True, animationStartTime = True)
+		self.time[2] = c.playbackOptions(query = True, min = True)
+		self.time[3] = c.playbackOptions(query = True, max = True)
+		self.time[4] = c.playbackOptions(query = True, animationEndTime = True)
+	def TimeRangeSetCurrent(self, value, *args):
+		c.currentTime(value)
+	def TimeRangeSetCurrentCached(self, *args):
 		c.currentTime(self.time[0])
-	def TimeRangeCached(self, *args): # TODO to external class
+	def TimeRangeSetMin(self, value, *args):
+		c.playbackOptions(edit = True, min = value)
+	def TimeRangeReset(self, *args):
+		c.playbackOptions(edit = True, animationStartTime = self.time[1], min = self.time[2], max = self.time[3], animationEndTime = self.time[4])
 		c.currentTime(self.time[2])
 
 	def SelectTransformHierarchy(self, *args):# TODO from GETools class (need to merge in future)
@@ -424,7 +429,7 @@ class OVLP:
 		for i in range(len(list)):
 			c.select(list[i], add = True)
 	@staticmethod
-	def BakeSelected(doNotCut=1): # TODO from GETools class (need to merge in future)
+	def BakeSelected(doNotCut=True): # TODO from GETools class (need to merge in future)
 		_startTime = c.playbackOptions(query = True, min = True)
 		_endTime = c.playbackOptions(query = True, max = True)
 		c.bakeResults(t = (_startTime, _endTime), preserveOutsideKeys = doNotCut, simulation = True)
@@ -440,8 +445,8 @@ class OVLP:
 			return
 		self.selected = self.selected[0]
 		# Get min/max anim range time and reset time slider
-		self.TimeRangeGet()
-		self.TimeRangeMin()
+		self.TimeRangeScan()
+		self.TimeRangeSetCurrent(self.time[2])
 		# Create group
 		c.select(clear = True)
 		if (c.objExists(OVLP.nameGroup)):
@@ -496,7 +501,7 @@ class OVLP:
 		self.sliderNTimeScale.startName = self.nucleus
 		c.setAttr(self.nucleus + ".gravity", 0)
 		c.setAttr(self.nucleus + ".timeScale", self.sliderNTimeScale.Get())
-		c.setAttr(self.nucleus + ".startFrame", self.time[0]) # TODO maybe need check start frame in other functions?
+		c.setAttr(self.nucleus + ".startFrame", self.time[2])
 		c.setAttr(self.nucleus + ".visibility", 0)
 
 		# Create and connect locator to particle
@@ -593,10 +598,10 @@ class OVLP:
 		self.loft[1] = CheckAndSet(OVLP.nameLoft[1])
 		self.loft[2] = CheckAndSet(OVLP.nameLoft[2])
 		# Time and offset
-		self.TimeRangeGet()
-		self.TimeRangeMin()
+		self.TimeRangeScan()
+		self.TimeRangeSetCurrent(self.time[2])
 		self.startPositionGoalParticle[0] = c.xform(self.locAim[0], query = True, translation = True)
-		self.TimeRangeCached()
+		self.TimeRangeSetCurrentCached()
 		# Nucleus
 		_nucleus = c.ls(type = "nucleus")
 		if (len(_nucleus) > 0):
@@ -646,7 +651,7 @@ class OVLP:
 		_checkStartPos = self.startPositionGoalParticle[0] == None
 		if (_checkSelected or _checkGoal or _checkAim or _checkStartPos): return
 
-		c.currentTime(self.time[0])
+		c.currentTime(self.time[2])
 		# Mirrors
 		_mirror = [1, 1, 1]
 		if (self.checkboxMirrorX.Get()): _mirror[0] = -1
@@ -735,7 +740,7 @@ class OVLP:
 		_vector[0] = self.sliderOffsetX.Get()
 		_vector[1] = self.sliderOffsetY.Get()
 		_vector[2] = self.sliderOffsetZ.Get()
-		return sqrt(pow(_vector[0], 2) + pow(_vector[1], 2) + pow(_vector[2], 2)) # Distance formula : √((x2 - x1)2 + (y2 - y1)2 + (z2 - z1)2)
+		return sqrt(pow(_vector[0], 2) + pow(_vector[1], 2) + pow(_vector[2], 2)) # Distance formula : V((x2 - x1)2 + (y2 - y1)2 + (z2 - z1)2)
 
 	def _GetSimulation(self, *args):
 		self.sliderPConserve.Scan()
@@ -789,27 +794,50 @@ class OVLP:
 			self.sliderOffsetX.Reset()
 			self.sliderOffsetY.Reset()
 			self.sliderOffsetZ.Reset()
+		
+		# Set time range
+		self.TimeRangeScan()
+		_startTime = self.time[2]
+		if (self.checkboxLoop.Get()):
+			_startTime = self.time[2] - self.time[3] # TODO set count of pre cycles
+			self.TimeRangeSetMin(_startTime)
+			self.TimeRangeSetCurrent(_startTime)
+		c.setAttr(self.nucleus + ".startFrame", _startTime)
+
 		# Start logic
 		if (translation): _attributes = OVLP.attrT
 		else: _attributes = OVLP.attrR
-		c.currentTime(self.time[0])
 		_item = self.selected
 		_name = "_rebake_" + self.ConvertText(_item)
 		_clone = c.duplicate(_item, name = _name, parentOnly = True, transformsOnly = True, smartTransform = True, returnRootsOnly = True)
 		c.parentConstraint(parent, _clone, maintainOffset = True)
 		c.select(_clone, replace = True)
+
 		# Bake
 		OVLP.BakeSelected()
 		_children = c.listRelatives(_clone, type = "constraint")
 		for child in _children: c.delete(child)
+		
 		# Copy/Paste keys
-		c.copyKey(_clone, attribute = _attributes) # TODO filtered attributes
-		c.pasteKey(_item, option = "replace", attribute = _attributes) # TODO filtered attributes
+		c.copyKey(_clone, time = (self.time[2], self.time[3]), attribute = _attributes) # TODO filtered attributes
+		c.pasteKey(_item, option = "replaceCompletely", attribute = _attributes) # TODO filtered attributes
 		c.delete(_clone)
+		
+		# Set time range
+		if (self.checkboxLoop.Get()):
+			_startTime = self.time[2]
+			c.setAttr(self.nucleus + ".startFrame", _startTime)
+			self.TimeRangeReset()
+			c.setInfinity(_item, preInfinite = "cycle", postInfinite = "cycle")
+		else:
+			c.setInfinity(_item, preInfinite = "constant", postInfinite = "constant")
+
+		# Delete setup
 		if (self.checkboxClean.Get()):
 			if (not deleteSetupLock):
 				self._SetupDelete()
-		# Restore offsets
+
+		# Restore offsets sliders
 		if (zeroOffsets):
 			self.sliderOffsetX.Set(_value1)
 			self.sliderOffsetY.Set(_value2)
