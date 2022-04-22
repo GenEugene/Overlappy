@@ -14,7 +14,7 @@ class OVLP:
 	nameWindowMain = "__OverlappyWindow__"
 	nameGroup = "_OverlappyGroup_"
 	nameLocGoalTarget = ("_locGoal_", "_locTarget_")
-	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_")
+	nameLocAim = ("_locAimBase_", "_locAimHidden_", "_locAim_", "_locAimUp_")
 	nameParticle = "_particle_"
 	nameLoft = ("_loftStart_", "_loftEnd_", "_loftShape_")
 	nameLayers = ("_OVLP_BASE_", "_OVLP_SAFE_", "OVLP_", "OVLPpos_", "OVLProt_")
@@ -38,6 +38,7 @@ class OVLP:
 	goalSmooth = 3
 	goalWeight = 0.5
 	nucleusTimeScale = 1
+	loopOffset = 2 # TODO set count of pre cycles
 	# SLIDERS (field min/max, slider min/max)
 	rangePRadius = (0, float("inf"), 0, 50)
 	rangePConserve = (0, 1, 0, 1)
@@ -76,7 +77,7 @@ class OVLP:
 		# OBJECTS
 		self.selected = ""
 		self.locGoalTarget = ["", ""]
-		self.locAim = ["", "", ""]
+		self.locAim = ["", "", "", ""]
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
@@ -328,13 +329,13 @@ class OVLP:
 		self.layoutOffset = c.frameLayout(label = "OFFSET", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
 		c.gridLayout(numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		c.separator()
-		self.checkboxMirrorX = classCheckbox(label = "MIRROR X", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
-		self.checkboxMirrorY = classCheckbox(label = "MIRROR Y", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
-		self.checkboxMirrorZ = classCheckbox(label = "MIRROR Z", command = partial(self._OffsetUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
+		self.checkboxMirrorX = classCheckbox(label = "MIRROR X", command = partial(self._OffsetsUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
+		self.checkboxMirrorY = classCheckbox(label = "MIRROR Y", command = partial(self._OffsetsUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
+		self.checkboxMirrorZ = classCheckbox(label = "MIRROR Z", command = partial(self._OffsetsUpdate, True), menuReset = True, enabled = True, ccResetAll = self._ResetOffsets)
 		c.columnLayout(parent = self.layoutOffset)
 		_offStartName = OVLP.nameLocGoalTarget[0]
 		_offParent = self.layoutOffset
-		_offCCDefault = self._OffsetUpdate
+		_offCCDefault = self._OffsetsUpdate
 		_offCCReset = self._ResetOffsets
 		_offCCGetValues = self._GetOffsets
 		self.sliderOffsetX = classSlider(label = "   Local X", attribute = "_parentConstraint1.target[0].targetOffsetTranslateX", startName = _offStartName, minMax = OVLP.rangeOffsetX, parent = _offParent, command = _offCCDefault, ccResetAll = _offCCReset, ccScanAll = _offCCGetValues)
@@ -454,7 +455,7 @@ class OVLP:
 		c.group(empty = True, name = OVLP.nameGroup)
 		# Run setup logic
 		self._SetupCreate(self.selected)
-		self._OffsetUpdate(cacheReset = True)
+		self._OffsetsUpdate(cacheReset = True)
 		c.select(self.selected, replace = True)
 	def _SetupCreate(self, objCurrent, *args):
 		# Names
@@ -465,6 +466,7 @@ class OVLP:
 		nameLocAimBase = OVLP.nameLocAim[0] + _objConverted
 		nameLocAimHidden = OVLP.nameLocAim[1] + _objConverted
 		nameLocAim = OVLP.nameLocAim[2] + _objConverted
+		nameLocAimUp = OVLP.nameLocAim[3] + _objConverted
 		nameLoftStart = OVLP.nameLoft[0] + _objConverted
 		nameLoftEnd = OVLP.nameLoft[1] + _objConverted
 		nameLoftShape = OVLP.nameLoft[2] + _objConverted
@@ -522,7 +524,13 @@ class OVLP:
 		self.locAim[1] = c.spaceLocator(name = nameLocAimHidden)[0]
 		c.matchTransform(self.locAim[1], self.locAim[0], position = True, rotation = True)
 		c.parent(self.locAim[1], self.locAim[0])
-		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (0, 1, 0), upVector = (0, 1, 0), worldUpType = "vector", worldUpVector = (0, 0, 1))
+		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (1, 0, 0), upVector = (0, 1, 0), worldUpType = "none")
+		c.delete(self.locAim[1] + "_aimConstraint1")
+		self.locAim[3] = c.duplicate(self.locAim[1], name = nameLocAimUp)[0]
+		c.parent(self.locAim[3], self.locAim[1])
+		c.setAttr(self.locAim[3] + ".ty", 100)
+		c.parent(self.locAim[3], self.locAim[0])
+		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (1, 0, 0), upVector = (0, 1, 0), worldUpType = "object", worldUpObject = self.locAim[3]) # "scene" "object" "objectrotation" "vector" "none"
 		
 		# Create aim locator
 		self.locAim[2] = c.spaceLocator(name = nameLocAim)[0]
@@ -614,7 +622,7 @@ class OVLP:
 	def _SetupDelete(self, deselect=True, *args):
 		self.selected = ""
 		self.locGoalTarget = ["", ""]
-		self.locAim = ["", "", ""]
+		self.locAim = ["", "", "", ""]
 		self.particle = ""
 		self.nucleus = ""
 		self.loft = ["", "", ""]
@@ -627,7 +635,7 @@ class OVLP:
 			c.delete(_nucleus)
 		if (deselect):
 			c.select(clear = True)
-	def _OffsetUpdate(self, cacheReset=False, *args):
+	def _OffsetsUpdate(self, cacheReset=False, *args):
 		if (type(cacheReset) is float): cacheReset = False
 		if (cacheReset):
 			self.sliderOffsetX.ResetCached()
@@ -684,6 +692,18 @@ class OVLP:
 		c.setAttr(_particleAttributes[0], self.startPositionGoalParticle[1][0] - _goalOffset[0])
 		c.setAttr(_particleAttributes[1], self.startPositionGoalParticle[1][1] - _goalOffset[1])
 		c.setAttr(_particleAttributes[2], self.startPositionGoalParticle[1][2] - _goalOffset[2])
+		# Reposition aim up locator and reconstrain aim
+		_selected = c.ls(selection = True)
+		c.delete(self.locAim[1] + "_aimConstraint1")
+		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (1, 0, 0), upVector = (0, 1, 0), worldUpType = "none")
+		c.delete(self.locAim[1] + "_aimConstraint1")
+		c.parent(self.locAim[3], self.locAim[1])
+		c.setAttr(self.locAim[3] + ".tx", 0)
+		c.setAttr(self.locAim[3] + ".ty", 100)
+		c.setAttr(self.locAim[3] + ".tz", 0)
+		c.parent(self.locAim[3], self.locAim[0])
+		c.aimConstraint(self.locGoalTarget[1], self.locAim[1], weight = 1, aimVector = (1, 0, 0), upVector = (0, 1, 0), worldUpType = "object", worldUpObject = self.locAim[3])
+		c.select(_selected, replace = True)
 		# Reconstrain aim locator to hidden aim
 		c.setAttr(self.locAim[2] + ".rotateX", 0)
 		c.setAttr(self.locAim[2] + ".rotateY", 0)
@@ -799,10 +819,10 @@ class OVLP:
 		self.TimeRangeScan()
 		_startTime = self.time[2]
 		if (self.checkboxLoop.Get()):
-			_startTime = self.time[2] - self.time[3] * 2 # TODO set count of pre cycles
+			_startTime = self.time[2] - self.time[3] * self.loopOffset
 			self.TimeRangeSetMin(_startTime)
 			self.TimeRangeSetCurrent(_startTime)
-		c.setAttr(self.nucleus + ".startFrame", _startTime)
+		c.setAttr(self.nucleus + ".startFrame", _startTime) # TODO bug when select ovlp objects
 
 		# Start logic
 		if (translation): _attributes = OVLP.attrT
@@ -842,8 +862,9 @@ class OVLP:
 			self.sliderOffsetX.Set(_value1)
 			self.sliderOffsetY.Set(_value2)
 			self.sliderOffsetZ.Set(_value3)
+			self._OffsetsUpdate(True)
 	def _BakeCheck(self, *args):
-		_selected = c.ls(selection = True)
+		_selected = c.ls(selection = True) # type = "transform"
 		if (len(_selected) == 0):
 			if (self.selected == ""): return None
 			return 0, None
