@@ -268,10 +268,9 @@ class OVLP:
 		c.menuItem(label = "Nucleus", command = self._SelectNucleus)
 		c.menuItem(label = "Target", command = self._SelectTarget)
 		c.menuItem(label = "Aim", command = self._SelectAim)
-		c.button(label = "LAYERS", command = self._LayerCreateMain, backgroundColor = OVLP.cBlue)
+		c.button(label = "LAYERS", command = partial(self._LayerMoveToSafeOrBase, True), backgroundColor = OVLP.cBlue) # _LayerCreate_TEST - old func for tests
 		c.popupMenu()
 		c.menuItem(dividerLabel = "Move", divider = True)
-		c.menuItem(label = "Move to Safe layer", command = partial(self._LayerMoveToSafeOrBase, True))
 		c.menuItem(label = "Move to Base layer", command = partial(self._LayerMoveToSafeOrBase, False))
 		c.menuItem(dividerLabel = "Delete", divider = True)
 		c.menuItem(label = "Delete '{0}'".format(OVLP.nameLayers[0]), command = partial(self._LayerDelete, OVLP.nameLayers[0]))
@@ -304,7 +303,7 @@ class OVLP:
 		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		_optionsResetAll = self._ResetOptions
 		self.checkboxHierarchy = classCheckbox(label = "HIERARCHY", value = OVLP.checkboxesOptions[0], menuReset = True, ccResetAll = _optionsResetAll)
-		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, ccResetAll = _optionsResetAll, enabled = False)
+		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, ccResetAll = _optionsResetAll)
 		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, ccResetAll = _optionsResetAll)
 		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, ccResetAll = _optionsResetAll)
 		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
@@ -814,7 +813,6 @@ class OVLP:
 			self.sliderOffsetX.Reset()
 			self.sliderOffsetY.Reset()
 			self.sliderOffsetZ.Reset()
-		
 		# Set time range
 		self.TimeRangeScan()
 		_startTime = self.time[2]
@@ -823,26 +821,35 @@ class OVLP:
 			self.TimeRangeSetMin(_startTime)
 			self.TimeRangeSetCurrent(_startTime)
 		c.setAttr(self.nucleus + ".startFrame", _startTime) # TODO bug when select ovlp objects
-
 		# Start logic
-		if (translation): _attributes = OVLP.attrT
-		else: _attributes = OVLP.attrR
+		if (translation): _attributesType = OVLP.attrT
+		else: _attributesType = OVLP.attrR
 		_item = self.selected
 		_name = "_rebake_" + self.ConvertText(_item)
 		_clone = c.duplicate(_item, name = _name, parentOnly = True, transformsOnly = True, smartTransform = True, returnRootsOnly = True)
 		c.parentConstraint(parent, _clone, maintainOffset = True)
 		c.select(_clone, replace = True)
-
 		# Bake
 		OVLP.BakeSelected()
 		_children = c.listRelatives(_clone, type = "constraint")
 		for child in _children: c.delete(child)
-		
-		# Copy/Paste keys
-		c.copyKey(_clone, time = (self.time[2], self.time[3]), attribute = _attributes) # TODO filtered attributes
-		c.pasteKey(_item, option = "replaceCompletely", attribute = _attributes) # TODO filtered attributes
+
+		# Filter attributes
+		_attributes = _attributesType # TODO filtered attributes
+
+		# Copy keys, check layer and paste keys
+		c.copyKey(_clone, time = (self.time[2], self.time[3]), attribute = _attributes)
+		if (self.checkboxLayer.Get()):
+			_animLayer = self._LayerCreate(_item)
+			_attrs = ["", "", ""]
+			_attrs[0] = "{0}.{1}".format(_item, _attributes[0])
+			_attrs[1] = "{0}.{1}".format(_item, _attributes[1])
+			_attrs[2] = "{0}.{1}".format(_item, _attributes[2])
+			c.animLayer(_animLayer, edit = True, attribute = _attrs)
+			c.pasteKey(_item, option = "replace", attribute = _attributes, animLayer = _animLayer)
+		else:
+			c.pasteKey(_item, option = "replaceCompletely", attribute = _attributes)
 		c.delete(_clone)
-		
 		# Set time range
 		if (self.checkboxLoop.Get()):
 			_startTime = self.time[2]
@@ -851,12 +858,10 @@ class OVLP:
 			c.setInfinity(_item, preInfinite = "cycle", postInfinite = "cycle")
 		else:
 			c.setInfinity(_item, preInfinite = "constant", postInfinite = "constant")
-
 		# Delete setup
 		if (self.checkboxClean.Get()):
 			if (not deleteSetupLock):
 				self._SetupDelete()
-
 		# Restore offsets sliders
 		if (zeroOffsets):
 			self.sliderOffsetX.Set(_value1)
@@ -936,19 +941,13 @@ class OVLP:
 				c.delete(child)
 
 	### LAYERS
-	def _LayerCreateMain(self, *args):
-		# Check selected
-		_selected = c.ls(selection = True)
-		if (len(_selected) == 0):
-			c.warning("You must select at least 1 object")
-			return
+	def _LayerCreate(self, obj, *args):
 		# Create main layer
 		if(not c.objExists(OVLP.nameLayers[0])):
 			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = True)
 		# Create layers on selected
-		for item in _selected:
-			_name = OVLP.nameLayers[2] + self.ConvertText(item) + "_1"
-			c.animLayer(_name, override = True, parent = self.layers[0])
+		_name = OVLP.nameLayers[2] + self.ConvertText(obj) + "_1"
+		return c.animLayer(_name, override = True, parent = self.layers[0])
 	def _LayerMoveToSafeOrBase(self, safeLayer=True, *args):
 		_id = [0, 1]
 		if (not safeLayer): _id = [1, 0]
@@ -1001,7 +1000,20 @@ class OVLP:
 			print("Layer '{0}' deleted".format(name))
 		else:
 			c.warning("Layer '{0}' doesn't exist".format(name))
-	
+	def _LayerCreate_TEST(self, *args):
+		# Check selected
+		_selected = c.ls(selection = True)
+		if (len(_selected) == 0):
+			c.warning("You must select at least 1 object")
+			return
+		# Create main layer
+		if(not c.objExists(OVLP.nameLayers[0])):
+			self.layers[0] = c.animLayer(OVLP.nameLayers[0], override = True)
+		# Create layers on selected
+		for item in _selected:
+			_name = OVLP.nameLayers[2] + self.ConvertText(item) + "_1"
+			c.animLayer(_name, override = True, parent = self.layers[0])
+
 	### DEV TOOLS
 	def _DEVFunction(self, *args):
 		print("DEV Function")
