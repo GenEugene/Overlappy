@@ -65,9 +65,10 @@ class OVLP:
 	cDarkGray = (.3, .3, .3)
 	cBlack = (.15, .15, .15)
 	# CONSTANTS
-	attrT = ["tx", "ty", "tz"]
-	attrR = ["rx", "ry", "rz"]
-	attrS = ["sx", "sy", "sz"]
+	attributesT = ("tx", "ty", "tz")
+	attributesR = ("rx", "ry", "rz")
+	attributesS = ("sx", "sy", "sz")
+	constraintsNames = ("parentConstraint", "pointConstraint", "orientConstraint", "scaleConstraint", "aimConstraint")
 
 	### MAIN
 	def __init__(self):
@@ -806,6 +807,40 @@ class OVLP:
 	
 	### BAKE
 	def _BakeLogic(self, parent, zeroOffsets=False, translation=True, deleteSetupLock=False, *args):
+		# Filter attributes
+		_item = self.selected
+		if (translation): _attributesType = OVLP.attributesT
+		else: _attributesType = OVLP.attributesR
+		_attrs = ["", "", ""]
+		for i in range(len(_attrs)):
+			_attrs[i] = "{0}.{1}".format(_item, _attributesType[i])
+		_attributesFiltered = []
+		for i in range(len(_attrs)):
+			_keyed = c.keyframe(_attrs[i], query = True)
+			if(_keyed):
+				_muted = c.mute(_attrs[i], query = True)
+				if(_muted):
+					continue
+			_locked = c.getAttr(_attrs[i], lock = True)
+			_keyable = c.getAttr(_attrs[i], keyable = True)
+			_settable = c.getAttr(_attrs[i], settable = True)
+			_constrained = False
+			_connections = c.listConnections(_attrs[i])
+			if(_connections):
+				for item in _connections:
+					_type = c.nodeType(item)
+					if(_type in OVLP.constraintsNames):
+						_constrained = True
+			if(not _locked and _keyable and _settable and not _constrained):
+				_attributesFiltered.append(_attributesType[i])
+		if(len(_attributesFiltered) == 0):
+			c.warning("No attributes")
+			return
+		
+		# Keyframe target attributes
+		c.setKeyframe(_item, attribute = _attributesFiltered)
+
+		# Zero offsets
 		if (zeroOffsets):
 			_value1 = self.sliderOffsetX.Get()
 			_value2 = self.sliderOffsetY.Get()
@@ -813,6 +848,7 @@ class OVLP:
 			self.sliderOffsetX.Reset()
 			self.sliderOffsetY.Reset()
 			self.sliderOffsetZ.Reset()
+		
 		# Set time range
 		self.TimeRangeScan()
 		_startTime = self.time[2]
@@ -821,35 +857,35 @@ class OVLP:
 			self.TimeRangeSetMin(_startTime)
 			self.TimeRangeSetCurrent(_startTime)
 		c.setAttr(self.nucleus + ".startFrame", _startTime) # TODO bug when select ovlp objects
+		
 		# Start logic
-		if (translation): _attributesType = OVLP.attrT
-		else: _attributesType = OVLP.attrR
-		_item = self.selected
 		_name = "_rebake_" + self.ConvertText(_item)
 		_clone = c.duplicate(_item, name = _name, parentOnly = True, transformsOnly = True, smartTransform = True, returnRootsOnly = True)
-		c.parentConstraint(parent, _clone, maintainOffset = True)
+		for attr in OVLP.attributesT:
+			c.setAttr(_clone[0] + "." + attr, lock = False)
+		for attr in OVLP.attributesR:
+			c.setAttr(_clone[0] + "." + attr, lock = False)
+		c.parentConstraint(parent, _clone, maintainOffset = True) # skipTranslate
 		c.select(_clone, replace = True)
+		
 		# Bake
 		OVLP.BakeSelected()
 		_children = c.listRelatives(_clone, type = "constraint")
 		for child in _children: c.delete(child)
-
-		# Filter attributes
-		_attributes = _attributesType # TODO filtered attributes
-
+		
 		# Copy keys, check layer and paste keys
-		c.copyKey(_clone, time = (self.time[2], self.time[3]), attribute = _attributes)
+		c.copyKey(_clone, time = (self.time[2], self.time[3]), attribute = _attributesFiltered)
 		if (self.checkboxLayer.Get()):
 			_animLayer = self._LayerCreate(_item)
-			_attrs = ["", "", ""]
-			_attrs[0] = "{0}.{1}".format(_item, _attributes[0])
-			_attrs[1] = "{0}.{1}".format(_item, _attributes[1])
-			_attrs[2] = "{0}.{1}".format(_item, _attributes[2])
-			c.animLayer(_animLayer, edit = True, attribute = _attrs)
-			c.pasteKey(_item, option = "replace", attribute = _attributes, animLayer = _animLayer)
+			_attrsLayer = []
+			for item in _attributesFiltered:
+				_attrsLayer.append("{0}.{1}".format(_item, item))
+			c.animLayer(_animLayer, edit = True, attribute = _attrsLayer)
+			c.pasteKey(_item, option = "replace", attribute = _attributesFiltered, animLayer = _animLayer)
 		else:
-			c.pasteKey(_item, option = "replaceCompletely", attribute = _attributes)
+			c.pasteKey(_item, option = "replaceCompletely", attribute = _attributesFiltered)
 		c.delete(_clone)
+		
 		# Set time range
 		if (self.checkboxLoop.Get()):
 			_startTime = self.time[2]
@@ -858,10 +894,12 @@ class OVLP:
 			c.setInfinity(_item, preInfinite = "cycle", postInfinite = "cycle")
 		else:
 			c.setInfinity(_item, preInfinite = "constant", postInfinite = "constant")
+		
 		# Delete setup
 		if (self.checkboxClean.Get()):
 			if (not deleteSetupLock):
 				self._SetupDelete()
+		
 		# Restore offsets sliders
 		if (zeroOffsets):
 			self.sliderOffsetX.Set(_value1)
