@@ -87,8 +87,8 @@ class OVLP:
 		self.windowMain = None
 		self.layoutMain = None
 		self.layoutButtons = None
-		self.layoutBaking = None
-		self.layoutOptions = None
+		# self.layoutBaking = None
+		# self.layoutOptions = None
 		self.layoutSimulation = None
 		self.layoutOffset = None
 		self.layoutDevTools = None
@@ -285,8 +285,8 @@ class OVLP:
 		c.menuItem(label = "Delete setup", command = self._SetupDelete)
 		
 		# BAKING
-		self.layoutBaking = c.frameLayout(label = "BAKING", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(parent = self.layoutBaking, numberOfColumns = 3, cellWidthHeight = (OVLP.windowWidth / 3, OVLP.lineHeight))
+		# self.layoutBaking = c.frameLayout(label = "BAKING", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		# c.gridLayout(parent = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		c.button(label = "TRANSLATION", command = partial(self._BakeVariants, 1), backgroundColor = OVLP.cLOrange)
 		c.popupMenu()
 		c.menuItem(label = "use offset", command = partial(self._BakeVariants, 2))
@@ -295,19 +295,17 @@ class OVLP:
 		c.popupMenu()
 		c.menuItem(label = "translate + rotate", command = self._BakeVariantComboTR)
 		c.menuItem(label = "rotate + translate", command = self._BakeVariantComboRT)
-		c.gridLayout(parent = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
-		c.button(label = "TO WORLD LOCATOR", command = self._BakeWorldLocator, backgroundColor = OVLP.cOrange)
-		c.button(label = "FROM SELECTED TO SELECTED", backgroundColor = OVLP.cOrange, enable = 0)
+		# c.gridLayout(parent = self.layoutBaking, numberOfColumns = 2, cellWidthHeight = (OVLP.windowWidth / 2, OVLP.lineHeight))
+		c.button(label = "TO LOCATOR", command = self._BakeWorldLocator, backgroundColor = OVLP.cOrange)
 
 		# OPTIONS
-		self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
-		c.gridLayout(parent = self.layoutOptions, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
+		# self.layoutOptions = c.frameLayout(label = "OPTIONS", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
+		# c.gridLayout(parent = self.layoutButtons, numberOfColumns = 4, cellWidthHeight = (OVLP.windowWidth / 4, OVLP.lineHeight))
 		_optionsResetAll = self._ResetOptions
 		self.checkboxHierarchy = classCheckbox(label = "HIERARCHY", value = OVLP.checkboxesOptions[0], menuReset = True, ccResetAll = _optionsResetAll)
 		self.checkboxLayer = classCheckbox(label = "LAYER", value = OVLP.checkboxesOptions[1], menuReset = True, ccResetAll = _optionsResetAll)
 		self.checkboxLoop = classCheckbox(label = "LOOP", value = OVLP.checkboxesOptions[2], menuReset = True, ccResetAll = _optionsResetAll)
 		self.checkboxClean = classCheckbox(label = "CLEAN", value = OVLP.checkboxesOptions[3], menuReset = True, ccResetAll = _optionsResetAll)
-		# c.radioButton(label = "radio1", onCommand = 'print("onCommand 1 start")', offCommand = 'print("offCommand 1 end")')
 
 		# SIMULATION SETTINGS
 		self.layoutSimulation = c.frameLayout(label = "SIMULATION", parent = self.layoutMain, collapseCommand = self.Resize_UI, expandCommand = self.Resize_UI, collapsable = True, borderVisible = True, backgroundColor = OVLP.cBlack)
@@ -366,20 +364,21 @@ class OVLP:
 			if (self.LayoutsCollapseCheck() == value):
 				return
 		c.frameLayout(self.layoutButtons, edit = True, collapse = value)
-		c.frameLayout(self.layoutBaking, edit = True, collapse = value)
-		c.frameLayout(self.layoutOptions, edit = True, collapse = value)
+		# c.frameLayout(self.layoutBaking, edit = True, collapse = value)
+		# c.frameLayout(self.layoutOptions, edit = True, collapse = value)
 		c.frameLayout(self.layoutSimulation, edit = True, collapse = value)
 		c.frameLayout(self.layoutOffset, edit = True, collapse = value)
 		c.frameLayout(self.layoutDevTools, edit = True, collapse = value)
 		self.Resize_UI()
 	def LayoutsCollapseCheck(self, *args): # needed to fix the window bug
 		check1 = c.frameLayout(self.layoutButtons, query = True, collapse = True)
-		check2 = c.frameLayout(self.layoutBaking, query = True, collapse = True)
-		check3 = c.frameLayout(self.layoutOptions, query = True, collapse = True)
+		# check2 = c.frameLayout(self.layoutBaking, query = True, collapse = True)
+		# check3 = c.frameLayout(self.layoutOptions, query = True, collapse = True)
 		check4 = c.frameLayout(self.layoutSimulation, query = True, collapse = True)
 		check5 = c.frameLayout(self.layoutOffset, query = True, collapse = True)
 		check6 = c.frameLayout(self.layoutDevTools, query = True, collapse = True)
-		if (check1 == check2 == check3 == check4 == check5 == check6):
+		# if (check1 == check2 == check3 == check4 == check5 == check6):
+		if (check1 == check4 == check5 == check6):
 			return check1
 	def LayoutDevToolsToggle(self, *args):
 		_value = c.frameLayout(self.layoutDevTools, query = True, visible = True)
@@ -835,6 +834,7 @@ class OVLP:
 				_attributesFiltered.append(_attributesType[i])
 		if(len(_attributesFiltered) == 0):
 			c.warning("No attributes")
+			self._SetupDelete()
 			return
 		
 		# Keyframe target attributes
