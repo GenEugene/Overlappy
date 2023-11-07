@@ -1,3 +1,6 @@
+# SCRIPT IS DEPRECATED. DEVELOPMENT MOVED TO GETOOLS REPOSITORY
+# https://github.com/GenEugene/GETools
+
 # OVERLAPPY (author GenEugene)
 Animation script for maya 2017/2022
 
